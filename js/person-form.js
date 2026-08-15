@@ -20,6 +20,11 @@ const personId = urlParams.get("id");
 
 async function init() {
   await requireAuth();
+  if (urlParams.get("saved") === "1") {
+    const statusEl = document.getElementById("save-status");
+    statusEl.textContent = "✓ Oseba je bila uspešno shranjena! Zdaj lahko spodaj dodaš starše, partnerja ali otroke.";
+    statusEl.classList.add("visible");
+  }
   if (personId) {
     document.getElementById("delete-btn").style.display = "inline-block";
     document.getElementById("relations-section").style.display = "block";
@@ -215,7 +220,7 @@ document.getElementById("person-form").addEventListener("submit", async (e) => {
 
   if (!personId && newId) {
     // Novo osebo preusmeri nazaj na isto stran z ID-jem, da lahko doda povezave
-    window.location.href = `person.html?id=${newId}`;
+    window.location.href = `person.html?id=${newId}&saved=1`;
   } else {
     window.location.href = "index.html";
   }

@@ -61,6 +61,27 @@ function buildFamilyChartData(people, partnerships, parentChild) {
   return Object.values(byId);
 }
 
+function addArrowsToTreeLinks() {
+  const svg = document.querySelector("#FamilyChart svg");
+  if (!svg) return;
+
+  if (!svg.querySelector("#f3-arrow-marker")) {
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    defs.innerHTML = `
+      <marker id="f3-arrow-marker" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a6d4f"></path>
+      </marker>`;
+    svg.insertBefore(defs, svg.firstChild);
+  }
+
+  svg.querySelectorAll("path.link, path[class*='link'], .link path").forEach(path => {
+    path.setAttribute("marker-end", "url(#f3-arrow-marker)");
+    path.setAttribute("stroke", "#8a6d4f");
+    path.setAttribute("stroke-width", "2");
+  });
+}
+
 async function loadAndRenderTree() {
   const data = await fetchFamilyData();
   const container = document.getElementById("FamilyChart");
@@ -88,4 +109,8 @@ async function loadAndRenderTree() {
   });
 
   f3Chart.updateTree({ initial: true });
+
+  // Puščice na povezavah se izrišejo z zamikom, ko family-chart konča z animacijo
+  setTimeout(addArrowsToTreeLinks, 400);
+  setTimeout(addArrowsToTreeLinks, 1000);
 }

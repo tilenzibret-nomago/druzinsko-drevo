@@ -173,6 +173,20 @@ form button[type="submit"] {
   font-size: 0.85rem;
 }
 
+.save-status {
+  display: none;
+  background: #e8f3e6;
+  color: #3d7a34;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin: 1rem 0 0;
+}
+
+.save-status.visible {
+  display: block;
+}
+
 #relations-section {
   background: #fff;
   padding: 1.5rem;
