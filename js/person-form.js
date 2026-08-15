@@ -199,6 +199,8 @@ async function createAndLink({ firstIdInput, lastIdInput, genderIdInput, createR
   // Osveži sezname (nova oseba naj bo tudi na voljo v drugih dropdownih)
   await initRelations();
 }
+
+document.getElementById("add-parent-btn").addEventListener("click", async () => {
   const parentId = document.getElementById("parent-select").value;
   const relationType = document.getElementById("parent-relation-type").value;
   if (!parentId) {
