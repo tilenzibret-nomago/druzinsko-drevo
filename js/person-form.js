@@ -127,33 +127,47 @@ async function renderSiblings() {
   const { data: parentRows } = await supabaseClient.from("parent_child").select("parent_id").eq("child_id", personId);
   currentParentIds = (parentRows || []).map(r => r.parent_id);
 
-  const addRelationDiv = document.querySelector("#sibling-select").closest(".add-relation");
-  const newPersonDiv = document.getElementById("sibling-new-first").closest(".new-person-inline");
   const hint = document.getElementById("sibling-no-parents-hint");
+  hint.style.display = currentParentIds.length === 0 ? "block" : "none";
 
-  if (currentParentIds.length === 0) {
-    addRelationDiv.style.display = "none";
-    newPersonDiv.style.display = "none";
-    hint.style.display = "block";
-    document.getElementById("siblings-list").innerHTML = "<li class='muted'>Ni dodanih staršev, zato ni mogoče prikazati bratov/sester.</li>";
-    return;
+  let siblingIds = [];
+  if (currentParentIds.length > 0) {
+    const { data: siblingRows } = await supabaseClient.from("parent_child").select("child_id").in("parent_id", currentParentIds);
+    siblingIds = [...new Set((siblingRows || []).map(r => r.child_id))].filter(id => id !== personId);
   }
 
-  addRelationDiv.style.display = "flex";
-  newPersonDiv.style.display = "flex";
-  hint.style.display = "none";
-
-  // Sorojenci = vse osebe, ki imajo vsaj enega skupnega starša, razen trenutne osebe same
-  const { data: siblingRows } = await supabaseClient.from("parent_child").select("child_id").in("parent_id", currentParentIds);
-  const siblingIds = [...new Set((siblingRows || []).map(r => r.child_id))].filter(id => id !== personId);
-
   const list = document.getElementById("siblings-list");
-  list.innerHTML = siblingIds.map(id => `
-    <li>${personLabel(id)}</li>`).join("") || "<li class='muted'>Ni dodanih bratov/sester.</li>";
+  list.innerHTML = siblingIds.map(id => `<li>${personLabel(id)}</li>`).join("") || "<li class='muted'>Ni dodanih bratov/sester.</li>";
 
-  // Dropdown za obstoječe osebe: izloči trenutno osebo IN že obstoječe sorojence
   const candidates = allPeople.filter(p => !siblingIds.includes(p.id));
   populateSelect("sibling-select", candidates);
+}
+
+// Poišče ali ustvari nevtralnega "placeholder" starša za trenutno osebo, če starš ni znan
+async function ensurePlaceholderParent() {
+  if (currentParentIds.length > 0) return currentParentIds;
+
+  const user = await getCurrentUser();
+  const placeholderResult = await supabaseClient.from("people").insert({
+    first_name: "Neznan/-a starš", gender: "O", created_by: user.id,
+  }).select("id").single();
+
+  if (placeholderResult.error) {
+    alert("Napaka pri ustvarjanju povezovalnega zapisa: " + placeholderResult.error.message);
+    return null;
+  }
+
+  const placeholderId = placeholderResult.data.id;
+  const { error } = await supabaseClient.from("parent_child").insert({
+    parent_id: placeholderId, child_id: personId, relation_type: "biological",
+  });
+  if (error) {
+    alert("Napaka pri povezovanju: " + error.message);
+    return null;
+  }
+
+  currentParentIds = [placeholderId];
+  return currentParentIds;
 }
 
 document.getElementById("add-sibling-btn").addEventListener("click", async () => {
@@ -162,7 +176,10 @@ document.getElementById("add-sibling-btn").addEventListener("click", async () =>
     alert("Najprej izberi osebo iz seznama.");
     return;
   }
-  for (const parentId of currentParentIds) {
+  const parentIds = await ensurePlaceholderParent();
+  if (!parentIds) return;
+
+  for (const parentId of parentIds) {
     const { error } = await supabaseClient.from("parent_child").insert({
       parent_id: parentId, child_id: siblingId, relation_type: "biological",
     });
@@ -183,10 +200,9 @@ document.getElementById("sibling-new-btn").addEventListener("click", async () =>
     alert("Vpiši vsaj ime nove osebe.");
     return;
   }
-  if (currentParentIds.length === 0) {
-    alert("Ta oseba še nima dodanih staršev.");
-    return;
-  }
+
+  const parentIds = await ensurePlaceholderParent();
+  if (!parentIds) return;
 
   const user = await getCurrentUser();
   const personResult = await supabaseClient.from("people").insert({
@@ -199,7 +215,7 @@ document.getElementById("sibling-new-btn").addEventListener("click", async () =>
   }
 
   const newPersonId = personResult.data.id;
-  for (const parentId of currentParentIds) {
+  for (const parentId of parentIds) {
     const { error } = await supabaseClient.from("parent_child").insert({
       parent_id: parentId, child_id: newPersonId, relation_type: "biological",
     });
