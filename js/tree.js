@@ -195,11 +195,29 @@ function computeRelationLabels(mainId, people, partnerships, parentChild) {
     });
   });
 
-  // Partnerji že označenih sorodnikov (svaštvo) - splošna oznaka
-  Object.keys(labels).slice().forEach(id => {
+  // Partnerji otrok/vnukov = snaha (žena sina/vnuka) ali zet (mož hčere/vnukinje)
+  Object.keys(descendantDist).forEach(id => {
+    (spousesOf[id] || []).forEach(spId => {
+      if (!labels[spId] && spId !== mainId) {
+        labels[spId] = label(spId, "Zet", "Snaha", "Zet/Snaha");
+      }
+    });
+  });
+
+  // Partnerji bratov/sester = svak/svakinja
+  siblingIds.forEach(id => {
     (spousesOf[id] || []).forEach(spId => {
       if (!labels[spId] && spId !== mainId) {
         labels[spId] = label(spId, "Svak", "Svakinja", "Sorodnik po svaštvu");
+      }
+    });
+  });
+
+  // Vsi preostali partnerji že označenih sorodnikov - splošna oznaka
+  Object.keys(labels).slice().forEach(id => {
+    (spousesOf[id] || []).forEach(spId => {
+      if (!labels[spId] && spId !== mainId) {
+        labels[spId] = label(spId, "Sorodnik po svaštvu", "Sorodnica po svaštvu", "Sorodnik po svaštvu");
       }
     });
   });
