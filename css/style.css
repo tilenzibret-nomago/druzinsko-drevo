@@ -189,6 +189,23 @@ body.embedded .person-name-header {
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
+.full-tree-main {
+  padding: 1.5rem;
+  max-width: none;
+}
+
+#NetworkView {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #ece5da;
+  box-shadow: 0 4px 24px rgba(60,45,25,0.06);
+  overflow: hidden;
+}
+
+#NetworkView svg {
+  display: block;
+}
+
 .login-box input {
   width: 100%;
   padding: 0.6rem;

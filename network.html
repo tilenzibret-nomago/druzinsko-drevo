@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Celotno drevo — Družinsko drevo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+<body>
+  <header>
+    <h1>Celoten pregled družine</h1>
+    <div>
+      <a href="index.html">← Pedigree pogled</a>
+      <button id="logout-btn">Odjava</button>
+    </div>
+  </header>
+
+  <main class="full-tree-main">
+    <p class="hint" style="margin-bottom:1rem;">
+      Vse osebe in povezave naenkrat. Vlecite za premikanje, s kolescem miške približajte/oddaljite.
+      Modra = moški, roza = ženska. Klik na osebo odpre urejanje.
+    </p>
+    <div id="NetworkView"></div>
+  </main>
+
+  <div id="edit-overlay" class="edit-overlay"></div>
+  <aside id="edit-panel" class="edit-panel">
+    <div class="edit-panel-header">
+      <span>Urejanje osebe</span>
+      <button id="close-panel-btn" class="close-panel-btn" aria-label="Zapri">×</button>
+    </div>
+    <iframe id="edit-panel-frame" class="edit-panel-frame" src="about:blank"></iframe>
+  </aside>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/network-view.js"></script>
+  <script>
+    (async () => {
+      await requireAuth();
+      await loadAndRenderNetwork();
+    })();
+
+    document.getElementById("logout-btn").addEventListener("click", signOut);
+
+    document.getElementById("close-panel-btn").addEventListener("click", () => closeEditPanel());
+    document.getElementById("edit-overlay").addEventListener("click", () => closeEditPanel());
+
+    function closeEditPanel() {
+      document.getElementById("edit-panel").classList.remove("open");
+      document.getElementById("edit-overlay").classList.remove("open");
+      document.getElementById("edit-panel-frame").src = "about:blank";
+      loadAndRenderNetwork();
+    }
+
+    window.addEventListener("message", (e) => {
+      if (e.data === "person-saved" || e.data === "person-deleted") {
+        loadAndRenderNetwork();
+      }
+    });
+
+    function openEditPanel(personId) {
+      document.getElementById("edit-panel-frame").src = `person.html?id=${personId}&embed=1`;
+      document.getElementById("edit-panel").classList.add("open");
+      document.getElementById("edit-overlay").classList.add("open");
+    }
+  </script>
+</body>
+</html>
