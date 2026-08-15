@@ -1,4 +1,4 @@
-// Celoten pregled - vse osebe kot mreža (d3 force layout)
+// Celoten pregled - razporeditev po generacijah (layered layout), ne kaotičen force graph
 
 async function loadAndRenderNetwork() {
   const container = document.getElementById("NetworkView");
@@ -15,95 +15,181 @@ async function loadAndRenderNetwork() {
     return;
   }
 
-  const width = container.clientWidth || 1000;
-  const height = window.innerHeight - 220;
+  const parentsOf = {};
+  const childrenOf = {};
+  parentChild.forEach(r => {
+    (parentsOf[r.child_id] ??= []).push(r.parent_id);
+    (childrenOf[r.parent_id] ??= []).push(r.child_id);
+  });
+  const spousesOf = {};
+  partnerships.forEach(r => {
+    (spousesOf[r.person1_id] ??= []).push(r.person2_id);
+    (spousesOf[r.person2_id] ??= []).push(r.person1_id);
+  });
 
-  const nodes = people.map(p => ({
-    id: p.id,
-    name: `${p.first_name} ${p.last_name || ""}`.trim(),
-    gender: p.gender,
-    deceased: p.is_deceased,
-  }));
+  const byId = {};
+  people.forEach(p => { byId[p.id] = p; });
 
-  const links = [];
-  parentChild.forEach(r => links.push({ source: r.parent_id, target: r.child_id, type: "parent" }));
-  partnerships.forEach(r => links.push({ source: r.person1_id, target: r.person2_id, type: "partner" }));
+  // --- 1. Izračun generacije vsake osebe (0 = najstarejši predniki) ---
+  const generation = {};
+  const allIds = people.map(p => p.id);
 
+  function computeGeneration(id, visiting = new Set()) {
+    if (generation[id] !== undefined) return generation[id];
+    if (visiting.has(id)) return 0; // varovalka pred ciklom
+    visiting.add(id);
+    const parents = parentsOf[id] || [];
+    if (parents.length === 0) {
+      generation[id] = 0;
+    } else {
+      const parentGens = parents.map(pid => computeGeneration(pid, visiting));
+      generation[id] = Math.max(...parentGens) + 1;
+    }
+    return generation[id];
+  }
+  allIds.forEach(id => computeGeneration(id));
+
+  // Partnerji naj bodo v isti generaciji (nižja od obeh, da se poravnajo)
+  let changed = true;
+  let guard = 0;
+  while (changed && guard < 10) {
+    changed = false;
+    guard++;
+    partnerships.forEach(r => {
+      const g1 = generation[r.person1_id], g2 = generation[r.person2_id];
+      if (g1 !== g2) {
+        const min = Math.min(g1, g2);
+        generation[r.person1_id] = min;
+        generation[r.person2_id] = min;
+        changed = true;
+      }
+    });
+  }
+
+  // --- 2. Grupiranje po generacijah ---
+  const genGroups = {};
+  allIds.forEach(id => {
+    const g = generation[id];
+    (genGroups[g] ??= []).push(id);
+  });
+  const genLevels = Object.keys(genGroups).map(Number).sort((a, b) => a - b);
+
+  // --- 3. Razporeditev x pozicij: začni pri generaciji 0, nato uredi po povprečni poziciji staršev ---
+  const xPos = {};
+  const NODE_SPACING = 110;
+
+  genLevels.forEach((g, idx) => {
+    let ids = genGroups[g];
+    if (idx === 0) {
+      ids.sort((a, b) => (byId[a].last_name || "").localeCompare(byId[b].last_name || ""));
+    } else {
+      ids.sort((a, b) => {
+        const pa = (parentsOf[a] || []).map(p => xPos[p] ?? 0);
+        const pb = (parentsOf[b] || []).map(p => xPos[p] ?? 0);
+        const avgA = pa.length ? pa.reduce((s, v) => s + v, 0) / pa.length : 999999;
+        const avgB = pb.length ? pb.reduce((s, v) => s + v, 0) / pb.length : 999999;
+        return avgA - avgB;
+      });
+    }
+    // Partnerje postavi drug ob drugem
+    const placed = new Set();
+    const ordered = [];
+    ids.forEach(id => {
+      if (placed.has(id)) return;
+      ordered.push(id);
+      placed.add(id);
+      (spousesOf[id] || []).forEach(spId => {
+        if (generation[spId] === g && !placed.has(spId)) {
+          ordered.push(spId);
+          placed.add(spId);
+        }
+      });
+    });
+    ordered.forEach((id, i) => { xPos[id] = i * NODE_SPACING; });
+  });
+
+  const ROW_HEIGHT = 130;
+  const maxWidth = Math.max(...genLevels.map(g => genGroups[g].length)) * NODE_SPACING + 200;
+  const totalHeight = (genLevels.length + 1) * ROW_HEIGHT;
+
+  // --- 4. Izris ---
   const svg = d3.select("#NetworkView")
     .append("svg")
     .attr("width", "100%")
-    .attr("height", height)
-    .attr("viewBox", [0, 0, width, height]);
+    .attr("height", Math.min(window.innerHeight - 220, 750))
+    .attr("viewBox", [0, 0, maxWidth, totalHeight]);
 
-  const g = svg.append("g");
+  const g = svg.append("g").attr("transform", "translate(100, 60)");
 
-  svg.call(d3.zoom().scaleExtent([0.1, 3]).on("zoom", (event) => {
+  svg.call(d3.zoom().scaleExtent([0.2, 3]).on("zoom", (event) => {
     g.attr("transform", event.transform);
   }));
 
-  const simulation = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(links).id(d => d.id).distance(d => d.type === "partner" ? 60 : 90).strength(0.6))
-    .force("charge", d3.forceManyBody().strength(-180))
-    .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("collide", d3.forceCollide(38));
+  function nodeX(id) { return xPos[id] || 0; }
+  function nodeY(id) { return generation[id] * ROW_HEIGHT; }
 
-  const link = g.append("g")
-    .selectAll("line")
-    .data(links)
+  // Povezave starš-otrok (ravne diagonalne črte)
+  g.append("g").selectAll("line.pc")
+    .data(parentChild.filter(r => byId[r.parent_id] && byId[r.child_id]))
     .join("line")
-    .attr("stroke", d => d.type === "partner" ? "#c98a9c" : "#8a6d4f")
-    .attr("stroke-width", d => d.type === "partner" ? 1.5 : 2)
-    .attr("stroke-dasharray", d => d.type === "partner" ? "4,3" : null)
-    .attr("stroke-opacity", 0.6);
+    .attr("class", "pc")
+    .attr("x1", d => nodeX(d.parent_id))
+    .attr("y1", d => nodeY(d.parent_id) + 14)
+    .attr("x2", d => nodeX(d.child_id))
+    .attr("y2", d => nodeY(d.child_id) - 14)
+    .attr("stroke", "#c3b4a0")
+    .attr("stroke-width", 1.3);
 
+  // Povezave partnerstev (vodoravne črtkane črte)
+  g.append("g").selectAll("line.sp")
+    .data(partnerships.filter(r => byId[r.person1_id] && byId[r.person2_id] && generation[r.person1_id] === generation[r.person2_id]))
+    .join("line")
+    .attr("class", "sp")
+    .attr("x1", d => nodeX(d.person1_id))
+    .attr("y1", d => nodeY(d.person1_id))
+    .attr("x2", d => nodeX(d.person2_id))
+    .attr("y2", d => nodeY(d.person2_id))
+    .attr("stroke", "#c98a9c")
+    .attr("stroke-width", 1.5)
+    .attr("stroke-dasharray", "3,3");
+
+  // Vozlišča (osebe)
   const node = g.append("g")
     .selectAll("g")
-    .data(nodes)
+    .data(people)
     .join("g")
     .attr("cursor", "pointer")
-    .call(drag(simulation));
+    .attr("transform", d => `translate(${nodeX(d.id)},${nodeY(d.id)})`);
 
   node.append("circle")
-    .attr("r", 16)
+    .attr("r", 13)
     .attr("fill", d => d.gender === "M" ? "#6e93a3" : d.gender === "F" ? "#c17c94" : "#a89a86")
-    .attr("stroke", d => d.deceased ? "#3d3229" : "#fff")
-    .attr("stroke-width", d => d.deceased ? 2 : 1.5)
-    .attr("stroke-dasharray", d => d.deceased ? "3,2" : null);
+    .attr("stroke", d => d.is_deceased ? "#3d3229" : "#fff")
+    .attr("stroke-width", d => d.is_deceased ? 2 : 1.3);
 
   node.append("text")
-    .text(d => d.name)
-    .attr("x", 20)
-    .attr("y", 4)
-    .attr("font-size", "11px")
+    .text(d => `${d.first_name} ${d.last_name || ""}`.trim())
+    .attr("x", 0)
+    .attr("y", 26)
+    .attr("text-anchor", "middle")
+    .attr("font-size", "9.5px")
     .attr("fill", "#2b2622")
     .attr("font-family", "system-ui, sans-serif")
     .style("pointer-events", "none");
 
-  node.on("click", (event, d) => {
-    openEditPanel(d.id);
-  });
+  node.append("title").text(d => `${d.first_name} ${d.last_name || ""}`.trim());
 
-  simulation.on("tick", () => {
-    link
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
-    node.attr("transform", d => `translate(${d.x},${d.y})`);
-  });
+  node.on("click", (event, d) => openEditPanel(d.id));
 
-  function drag(sim) {
-    function dragstarted(event, d) {
-      if (!event.active) sim.alphaTarget(0.3).restart();
-      d.fx = d.x; d.fy = d.y;
-    }
-    function dragged(event, d) {
-      d.fx = event.x; d.fy = event.y;
-    }
-    function dragended(event, d) {
-      if (!event.active) sim.alphaTarget(0);
-      d.fx = null; d.fy = null;
-    }
-    return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
-  }
+  // Oznake generacij ob levem robu
+  g.append("g").selectAll("text.gen-label")
+    .data(genLevels)
+    .join("text")
+    .attr("class", "gen-label")
+    .attr("x", -70)
+    .attr("y", g => g * ROW_HEIGHT + 5)
+    .attr("font-size", "11px")
+    .attr("fill", "#a89a86")
+    .attr("font-family", "system-ui, sans-serif")
+    .text(g => `Rod ${g + 1}`);
 }
