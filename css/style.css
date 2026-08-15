@@ -187,6 +187,37 @@ form button[type="submit"] {
   display: block;
 }
 
+.person-name-header {
+  font-size: 1.4rem;
+  color: #3d3229;
+  margin: 0 0 1rem;
+}
+
+#details-toggle {
+  margin-top: 1.5rem;
+}
+
+#details-toggle summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #8a6d4f;
+  padding: 0.6rem 0;
+  font-size: 0.95rem;
+  list-style: none;
+}
+
+#details-toggle summary::-webkit-details-marker {
+  display: none;
+}
+
+#details-toggle summary::before {
+  content: "▸ ";
+}
+
+#details-toggle[open] summary::before {
+  content: "▾ ";
+}
+
 #relations-section {
   background: #fff;
   padding: 1.5rem;

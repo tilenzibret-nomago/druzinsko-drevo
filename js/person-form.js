@@ -29,8 +29,12 @@ async function init() {
     document.getElementById("delete-btn").style.display = "inline-block";
     document.getElementById("relations-section").style.display = "block";
     document.getElementById("relations-hint").style.display = "none";
+    document.getElementById("details-toggle").removeAttribute("open");
     await loadPerson(personId);
     await initRelations();
+  } else {
+    // Nova oseba: osnovni podatki naj bodo takoj odprti
+    document.getElementById("details-toggle").setAttribute("open", "");
   }
 }
 
@@ -243,6 +247,11 @@ async function loadPerson(id) {
     window.location.href = "index.html";
     return;
   }
+
+  const headerEl = document.getElementById("person-name-header");
+  headerEl.textContent = `${data.first_name} ${data.last_name || ""}`.trim();
+  headerEl.style.display = "block";
+
   document.getElementById("first_name").value = data.first_name || "";
   document.getElementById("last_name").value = data.last_name || "";
   document.getElementById("maiden_name").value = data.maiden_name || "";
