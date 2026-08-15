@@ -113,7 +113,88 @@ function attachRemoveHandlers() {
   });
 }
 
-document.getElementById("add-parent-btn").addEventListener("click", async () => {
+document.getElementById("parent-new-btn").addEventListener("click", async () => {
+  await createAndLink({
+    firstIdInput: "parent-new-first",
+    lastIdInput: "parent-new-last",
+    genderIdInput: "parent-new-gender",
+    createRelation: async (newPersonId) => {
+      const relationType = document.getElementById("parent-relation-type").value;
+      return supabaseClient.from("parent_child").insert({
+        parent_id: newPersonId, child_id: personId, relation_type: relationType,
+      });
+    },
+    afterSuccess: renderParents,
+  });
+});
+
+document.getElementById("partner-new-btn").addEventListener("click", async () => {
+  await createAndLink({
+    firstIdInput: "partner-new-first",
+    lastIdInput: "partner-new-last",
+    genderIdInput: "partner-new-gender",
+    createRelation: async (newPersonId) => {
+      const type = document.getElementById("partner-type").value;
+      return supabaseClient.from("partnerships").insert({
+        person1_id: personId, person2_id: newPersonId, type,
+      });
+    },
+    afterSuccess: renderPartners,
+  });
+});
+
+document.getElementById("child-new-btn").addEventListener("click", async () => {
+  await createAndLink({
+    firstIdInput: "child-new-first",
+    lastIdInput: "child-new-last",
+    genderIdInput: "child-new-gender",
+    createRelation: async (newPersonId) => {
+      const relationType = document.getElementById("child-relation-type").value;
+      return supabaseClient.from("parent_child").insert({
+        parent_id: personId, child_id: newPersonId, relation_type: relationType,
+      });
+    },
+    afterSuccess: renderChildren,
+  });
+});
+
+async function createAndLink({ firstIdInput, lastIdInput, genderIdInput, createRelation, afterSuccess }) {
+  const firstName = document.getElementById(firstIdInput).value.trim();
+  const lastName = document.getElementById(lastIdInput).value.trim();
+  const gender = document.getElementById(genderIdInput).value;
+
+  if (!firstName) {
+    alert("Vpiši vsaj ime nove osebe.");
+    return;
+  }
+
+  const user = await getCurrentUser();
+  const personResult = await supabaseClient.from("people").insert({
+    first_name: firstName,
+    last_name: lastName || null,
+    gender,
+    created_by: user.id,
+  }).select("id").single();
+
+  if (personResult.error) {
+    alert("Napaka pri ustvarjanju osebe: " + personResult.error.message);
+    return;
+  }
+
+  const newPersonId = personResult.data.id;
+  const relationResult = await createRelation(newPersonId);
+
+  if (relationResult.error) {
+    alert("Oseba je bila ustvarjena, a povezave ni bilo mogoče dodati: " + relationResult.error.message);
+    return;
+  }
+
+  document.getElementById(firstIdInput).value = "";
+  document.getElementById(lastIdInput).value = "";
+
+  // Osveži sezname (nova oseba naj bo tudi na voljo v drugih dropdownih)
+  await initRelations();
+}
   const parentId = document.getElementById("parent-select").value;
   const relationType = document.getElementById("parent-relation-type").value;
   if (!parentId) {

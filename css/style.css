@@ -265,3 +265,29 @@ form button[type="submit"] {
   border-radius: 6px;
   cursor: pointer;
 }
+
+.new-person-inline {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e5ddd3;
+  flex-wrap: wrap;
+}
+
+.new-person-inline input,
+.new-person-inline select {
+  padding: 0.4rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  flex: 1;
+  min-width: 100px;
+}
+
+.new-person-btn {
+  background: transparent !important;
+  color: #8a6d4f !important;
+  border: 1px dashed #8a6d4f !important;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
