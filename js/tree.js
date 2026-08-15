@@ -1,6 +1,12 @@
 // Pretvorba people/partnerships/parent_child -> format, ki ga pričakuje family-chart
 // family-chart format: [{ id, data: {...}, rels: { father, mother, spouses: [], children: [] } }]
 
+let rawPeople = [];
+let rawPartnerships = [];
+let rawParentChild = [];
+let f3ChartInstance = null;
+let currentMainId = null;
+
 async function fetchFamilyData() {
   const [{ data: people, error: peopleErr },
          { data: partnerships, error: partErr },
@@ -15,6 +21,10 @@ async function fetchFamilyData() {
     return [];
   }
 
+  rawPeople = people;
+  rawPartnerships = partnerships;
+  rawParentChild = parentChild;
+
   return buildFamilyChartData(people, partnerships, parentChild);
 }
 
@@ -24,7 +34,7 @@ function isoToEuDisplay(isoDate) {
   return `${day}.${month}.${year}`;
 }
 
-function buildFamilyChartData(people, partnerships, parentChild) {
+function buildFamilyChartData(people, partnerships, parentChild, relationLabels) {
   const byId = {};
   people.forEach(p => {
     byId[p.id] = {
@@ -35,6 +45,7 @@ function buildFamilyChartData(people, partnerships, parentChild) {
         gender: p.gender || "O",
         birthday: isoToEuDisplay(p.birth_date),
         avatar: p.photo_url || "",
+        relation: relationLabels?.[p.id] || "",
       },
       rels: { spouses: [], children: [] },
     };
@@ -61,6 +72,141 @@ function buildFamilyChartData(people, partnerships, parentChild) {
   return Object.values(byId);
 }
 
+// Izračuna sorodstvene nazive vseh oseb glede na osebo v središču (mainId)
+function computeRelationLabels(mainId, people, partnerships, parentChild) {
+  const genderById = {};
+  people.forEach(p => { genderById[p.id] = p.gender; });
+
+  const parentsOf = {};
+  const childrenOf = {};
+  parentChild.forEach(r => {
+    (parentsOf[r.child_id] ??= []).push(r.parent_id);
+    (childrenOf[r.parent_id] ??= []).push(r.child_id);
+  });
+
+  const spousesOf = {};
+  partnerships.forEach(r => {
+    (spousesOf[r.person1_id] ??= []).push(r.person2_id);
+    (spousesOf[r.person2_id] ??= []).push(r.person1_id);
+  });
+
+  const label = (id, male, female, neutral) => {
+    const g = genderById[id];
+    if (g === "M") return male;
+    if (g === "F") return female;
+    return neutral || male;
+  };
+
+  const labels = {};
+  if (!mainId || !genderById[mainId]) return labels;
+  labels[mainId] = "— izbrana oseba —";
+
+  // Prednika (starši, dedki, pradedki...)
+  const ancestorDist = {};
+  {
+    let frontier = [mainId];
+    const visited = new Set([mainId]);
+    let dist = 0;
+    while (frontier.length && dist < 6) {
+      const next = [];
+      for (const id of frontier) {
+        for (const pid of (parentsOf[id] || [])) {
+          if (!visited.has(pid)) {
+            visited.add(pid);
+            ancestorDist[pid] = dist + 1;
+            next.push(pid);
+          }
+        }
+      }
+      frontier = next;
+      dist++;
+    }
+  }
+
+  // Potomci (otroci, vnuki, pravnuki...)
+  const descendantDist = {};
+  {
+    let frontier = [mainId];
+    const visited = new Set([mainId]);
+    let dist = 0;
+    while (frontier.length && dist < 6) {
+      const next = [];
+      for (const id of frontier) {
+        for (const cid of (childrenOf[id] || [])) {
+          if (!visited.has(cid)) {
+            visited.add(cid);
+            descendantDist[cid] = dist + 1;
+            next.push(cid);
+          }
+        }
+      }
+      frontier = next;
+      dist++;
+    }
+  }
+
+  Object.entries(ancestorDist).forEach(([id, d]) => {
+    if (d === 1) labels[id] = label(id, "Oče", "Mati");
+    else if (d === 2) labels[id] = label(id, "Dedek", "Babica");
+    else if (d === 3) labels[id] = label(id, "Pradedek", "Prababica");
+    else labels[id] = `Prednik (${d}. koleno)`;
+  });
+
+  Object.entries(descendantDist).forEach(([id, d]) => {
+    if (d === 1) labels[id] = label(id, "Sin", "Hči");
+    else if (d === 2) labels[id] = label(id, "Vnuk", "Vnukinja");
+    else if (d === 3) labels[id] = label(id, "Pravnuk", "Pravnukinja");
+    else labels[id] = `Potomec (${d}. koleno)`;
+  });
+
+  // Partner
+  (spousesOf[mainId] || []).forEach(id => {
+    if (!labels[id]) labels[id] = label(id, "Mož", "Žena", "Partner/-ka");
+  });
+
+  // Bratje/sestre (skupni starš)
+  const mainParents = parentsOf[mainId] || [];
+  const siblingIds = new Set();
+  mainParents.forEach(pid => (childrenOf[pid] || []).forEach(cid => { if (cid !== mainId) siblingIds.add(cid); }));
+  siblingIds.forEach(id => { if (!labels[id]) labels[id] = label(id, "Brat", "Sestra"); });
+
+  // Stric/teta (starševi bratje/sestre)
+  const auntUncleIds = new Set();
+  mainParents.forEach(parentId => {
+    (parentsOf[parentId] || []).forEach(gpId => {
+      (childrenOf[gpId] || []).forEach(id => {
+        if (id !== parentId) auntUncleIds.add(id);
+      });
+    });
+  });
+  auntUncleIds.forEach(id => { if (!labels[id]) labels[id] = label(id, "Stric", "Teta"); });
+
+  // Nečak/nečakinja (otroci bratov/sester)
+  siblingIds.forEach(sibId => {
+    (childrenOf[sibId] || []).forEach(id => {
+      if (!labels[id]) labels[id] = label(id, "Nečak", "Nečakinja");
+    });
+  });
+
+  // Bratranec/sestrična (otroci stricev/tet)
+  auntUncleIds.forEach(auId => {
+    (childrenOf[auId] || []).forEach(id => {
+      if (!labels[id]) labels[id] = label(id, "Bratranec", "Sestrična");
+    });
+  });
+
+  // Partnerji že označenih sorodnikov (svaštvo) - splošna oznaka
+  Object.keys(labels).slice().forEach(id => {
+    (spousesOf[id] || []).forEach(spId => {
+      if (!labels[spId] && spId !== mainId) {
+        labels[spId] = label(spId, "Svak", "Svakinja", "Sorodnik po svaštvu");
+      }
+    });
+  });
+
+  return labels;
+}
+
 function addArrowsToTreeLinks() {
   const svg = document.querySelector("#FamilyChart svg");
   if (!svg) return;
@@ -82,7 +228,20 @@ function addArrowsToTreeLinks() {
   });
 }
 
-let f3ChartInstance = null;
+function recomputeLabelsAndRerender(mainId) {
+  currentMainId = mainId;
+  const labels = computeRelationLabels(mainId, rawPeople, rawPartnerships, rawParentChild);
+  const newData = buildFamilyChartData(rawPeople, rawPartnerships, rawParentChild, labels);
+
+  if (f3ChartInstance.updateData) {
+    f3ChartInstance.updateData(newData);
+  }
+  if (f3ChartInstance.updateMainId) {
+    f3ChartInstance.updateMainId(mainId);
+  }
+  f3ChartInstance.updateTree({});
+  setTimeout(addArrowsToTreeLinks, 400);
+}
 
 async function loadAndRenderTree() {
   const data = await fetchFamilyData();
@@ -93,33 +252,33 @@ async function loadAndRenderTree() {
     return;
   }
 
-  const f3Chart = f3.createChart("#FamilyChart", data)
+  // Privzeto izberi prvo osebo kot izhodišče za nazive
+  currentMainId = data[0].id;
+  const initialLabels = computeRelationLabels(currentMainId, rawPeople, rawPartnerships, rawParentChild);
+  const initialData = buildFamilyChartData(rawPeople, rawPartnerships, rawParentChild, initialLabels);
+
+  const f3Chart = f3.createChart("#FamilyChart", initialData)
     .setTransitionTime(800)
     .setCardXSpacing(250)
-    .setCardYSpacing(150)
+    .setCardYSpacing(170)
     .setOrientationVertical();
   f3ChartInstance = f3Chart;
 
   const f3Card = f3Chart.setCard(f3.CardHtml)
-    .setCardDisplay([["first name", "last name"], ["birthday"]])
+    .setCardDisplay([["first name", "last name"], ["relation"], ["birthday"]])
     .setCardDim({})
     .setMiniTree(true)
     .setStyle("imageRect")
     .setOnHoverPathToMain();
 
   f3Card.setOnCardClick((e, d) => {
-    // Klik na osebo jo postavi v središče drevesa (namesto takojšnje navigacije na urejanje)
+    // Klik na osebo jo postavi v središče drevesa in preračuna nazive relativno nanjo
     selectPerson(d.data.id, d.data);
-    if (f3Chart.updateMainId) {
-      f3Chart.updateMainId(d.data.id);
-    }
-    f3Chart.updateTree({});
-    setTimeout(addArrowsToTreeLinks, 400);
+    recomputeLabelsAndRerender(d.data.id);
   });
 
   f3Chart.updateTree({ initial: true });
 
-  // Puščice na povezavah se izrišejo z zamikom, ko family-chart konča z animacijo
   setTimeout(addArrowsToTreeLinks, 400);
   setTimeout(addArrowsToTreeLinks, 1000);
 }
