@@ -51,10 +51,52 @@
       <button type="button" id="delete-btn" style="display:none;">Izbriši osebo</button>
     </form>
 
-    <section id="relations-section">
+    <section id="relations-section" style="display:none;">
       <h2>Povezave</h2>
-      <p class="hint">Dodajanje staršev, partnerjev in otrok bo na voljo v naslednjem koraku.</p>
+
+      <div class="relation-block">
+        <h3>Starši</h3>
+        <ul id="parents-list" class="relation-list"></ul>
+        <div class="add-relation">
+          <select id="parent-select"></select>
+          <select id="parent-relation-type">
+            <option value="biological">Biološki</option>
+            <option value="adoptive">Posvojitelj</option>
+            <option value="step">Krušni</option>
+          </select>
+          <button type="button" id="add-parent-btn">Dodaj starša</button>
+        </div>
+      </div>
+
+      <div class="relation-block">
+        <h3>Partner/-ka</h3>
+        <ul id="partners-list" class="relation-list"></ul>
+        <div class="add-relation">
+          <select id="partner-select"></select>
+          <select id="partner-type">
+            <option value="marriage">Poroka</option>
+            <option value="partnership">Partnerstvo</option>
+            <option value="divorced">Ločena/-a</option>
+          </select>
+          <button type="button" id="add-partner-btn">Dodaj partnerja</button>
+        </div>
+      </div>
+
+      <div class="relation-block">
+        <h3>Otroci</h3>
+        <ul id="children-list" class="relation-list"></ul>
+        <div class="add-relation">
+          <select id="child-select"></select>
+          <select id="child-relation-type">
+            <option value="biological">Biološki</option>
+            <option value="adoptive">Posvojen</option>
+            <option value="step">Krušni</option>
+          </select>
+          <button type="button" id="add-child-btn">Dodaj otroka</button>
+        </div>
+      </div>
     </section>
+    <p id="relations-hint" class="hint">Povezave lahko dodajaš po shranitvi osebe.</p>
   </main>
 
   <script src="js/supabase-client.js"></script>

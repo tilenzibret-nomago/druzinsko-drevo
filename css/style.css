@@ -76,6 +76,46 @@ main {
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.login-box button.secondary {
+  background: transparent;
+  color: #8a6d4f;
+  border: 1px solid #8a6d4f;
+}
+
+.tabs {
+  display: flex;
+  margin: 1.5rem 0 1rem;
+  border-bottom: 1px solid #e5ddd3;
+}
+
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 0.6rem;
+  cursor: pointer;
+  color: #8a8074;
+  font-size: 0.85rem;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+  color: #8a6d4f;
+  border-bottom-color: #8a6d4f;
+  font-weight: 600;
+}
+
+.tab-content p {
+  font-size: 0.85rem;
+  color: #8a8074;
+  text-align: left;
+}
+
+#pw-status-msg, #status-msg {
+  font-size: 0.85rem;
 }
 
 form {
@@ -121,4 +161,83 @@ form button[type="submit"] {
 .hint {
   color: #8a8074;
   font-size: 0.85rem;
+}
+
+#relations-section {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  border: 1px solid #e5ddd3;
+  margin-top: 1.5rem;
+}
+
+.relation-block {
+  margin-bottom: 1.5rem;
+}
+
+.relation-block h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.relation-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+}
+
+.relation-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #f0ebe3;
+  font-size: 0.9rem;
+}
+
+.relation-list li.muted {
+  color: #b0a89c;
+  font-style: italic;
+  border-bottom: none;
+}
+
+.tag {
+  background: #f0ebe3;
+  color: #8a6d4f;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+}
+
+.remove-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #c0392b;
+  cursor: pointer;
+  font-size: 1.1rem;
+  width: auto;
+  padding: 0 0.4rem;
+}
+
+.add-relation {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.add-relation select {
+  flex: 1;
+  padding: 0.4rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.add-relation button {
+  white-space: nowrap;
+  background: #8a6d4f;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
 }

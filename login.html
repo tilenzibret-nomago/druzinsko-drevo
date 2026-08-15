@@ -10,23 +10,77 @@
 <body>
   <div class="login-box">
     <h1>Družinsko drevo</h1>
-    <p>Vpiši svoj e-mail, dobil boš povezavo za prijavo.</p>
-    <input type="email" id="email-input" placeholder="ime@example.com">
-    <button id="login-btn">Pošlji povezavo</button>
-    <p id="status-msg"></p>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="password">E-mail + geslo</button>
+      <button class="tab-btn" data-tab="magic">Povezava po e-pošti</button>
+    </div>
+
+    <div id="password-tab" class="tab-content">
+      <p>Prijava ali registracija z geslom (deluje takoj, brez čakanja na e-mail).</p>
+      <input type="email" id="pw-email-input" placeholder="ime@example.com">
+      <input type="password" id="pw-password-input" placeholder="Geslo (vsaj 6 znakov)">
+      <button id="signin-btn">Prijava</button>
+      <button id="signup-btn" class="secondary">Ustvari nov račun</button>
+      <p id="pw-status-msg"></p>
+    </div>
+
+    <div id="magic-tab" class="tab-content" style="display:none;">
+      <p>Vpiši svoj e-mail, dobil boš povezavo za prijavo (lahko traja, če je bila omejitev pošiljanja dosežena).</p>
+      <input type="email" id="email-input" placeholder="ime@example.com">
+      <button id="login-btn">Pošlji povezavo</button>
+      <p id="status-msg"></p>
+    </div>
   </div>
 
   <script src="js/supabase-client.js"></script>
   <script src="js/auth.js"></script>
   <script>
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".tab-content").forEach(tc => tc.style.display = "none");
+        document.getElementById(btn.dataset.tab + "-tab").style.display = "block";
+      });
+    });
+
+    document.getElementById("signup-btn").addEventListener("click", async () => {
+      const email = document.getElementById("pw-email-input").value;
+      const password = document.getElementById("pw-password-input").value;
+      const statusEl = document.getElementById("pw-status-msg");
+      if (!email || !password) { statusEl.textContent = "Vpiši e-mail in geslo."; return; }
+      const result = await signUpWithPassword(email, password);
+      if (result.ok && result.session) {
+        window.location.href = "index.html";
+      } else if (result.ok) {
+        statusEl.textContent = "Račun ustvarjen! Zdaj se prijavi z gumbom 'Prijava'.";
+      } else {
+        statusEl.textContent = "Napaka: " + result.message;
+      }
+    });
+
+    document.getElementById("signin-btn").addEventListener("click", async () => {
+      const email = document.getElementById("pw-email-input").value;
+      const password = document.getElementById("pw-password-input").value;
+      const statusEl = document.getElementById("pw-status-msg");
+      if (!email || !password) { statusEl.textContent = "Vpiši e-mail in geslo."; return; }
+      const result = await signInWithPassword(email, password);
+      if (result.ok) {
+        window.location.href = "index.html";
+      } else {
+        statusEl.textContent = "Napaka: " + result.message;
+      }
+    });
+
     document.getElementById("login-btn").addEventListener("click", async () => {
       const email = document.getElementById("email-input").value;
       const statusEl = document.getElementById("status-msg");
       if (!email) return;
-      const ok = await signInWithEmail(email);
-      statusEl.textContent = ok
+      const result = await signInWithEmail(email);
+      statusEl.textContent = result.ok
         ? "Povezava poslana! Preveri e-pošto."
-        : "Prišlo je do napake, poskusi znova.";
+        : "Napaka: " + result.message;
     });
   </script>
 </body>

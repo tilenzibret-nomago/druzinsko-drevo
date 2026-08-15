@@ -4,9 +4,27 @@ async function signInWithEmail(email) {
   const { error } = await supabaseClient.auth.signInWithOtp({ email });
   if (error) {
     console.error("Napaka pri prijavi:", error.message);
-    return false;
+    return { ok: false, message: error.message };
   }
-  return true;
+  return { ok: true };
+}
+
+async function signUpWithPassword(email, password) {
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if (error) {
+    console.error("Napaka pri registraciji:", error.message);
+    return { ok: false, message: error.message };
+  }
+  return { ok: true, session: data.session };
+}
+
+async function signInWithPassword(email, password) {
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    console.error("Napaka pri prijavi:", error.message);
+    return { ok: false, message: error.message };
+  }
+  return { ok: true, session: data.session };
 }
 
 async function signOut() {
