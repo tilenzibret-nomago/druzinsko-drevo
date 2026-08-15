@@ -41,14 +41,15 @@ function renderList() {
     const lifespan = p.is_deceased
       ? `${isoToEu(p.birth_date) || "?"} – † ${isoToEu(p.death_date) || "?"}`
       : (p.birth_date ? `r. ${isoToEu(p.birth_date)}` : "");
-    const maiden = p.maiden_name ? ` <span class="maiden">(roj. ${p.maiden_name})</span>` : "";
+    const maiden = (!p.last_name && p.maiden_name) ? "" : (p.maiden_name ? ` <span class="maiden">(roj. ${p.maiden_name})</span>` : "");
+    const displayLastName = p.last_name || p.maiden_name || "";
     const genderClass = p.gender === "M" ? "male" : p.gender === "F" ? "female" : "other";
 
     return `
       <div class="person-row ${genderClass}" data-id="${p.id}">
         <div class="person-avatar">${p.photo_url ? `<img src="${p.photo_url}" alt="">` : "👤"}</div>
         <div class="person-info">
-          <div class="person-name">${p.first_name} ${p.last_name || ""}${maiden}</div>
+          <div class="person-name">${p.first_name} ${displayLastName}${maiden}</div>
           <div class="person-meta">${lifespan}${p.birth_place ? " · " + p.birth_place : ""}</div>
         </div>
         <div class="person-arrow">→</div>

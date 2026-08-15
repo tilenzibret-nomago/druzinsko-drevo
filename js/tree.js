@@ -44,7 +44,7 @@ function buildFamilyChartData(people, partnerships, parentChild, relationLabels)
       id: p.id,
       data: {
         "first name": p.first_name,
-        "last name": p.last_name || "",
+        "last name": p.last_name || p.maiden_name || "",
         gender: p.gender || "O",
         birthday: birthLine,
         deathday: deathLine,
@@ -199,11 +199,22 @@ function computeRelationLabels(mainId, people, partnerships, parentChild) {
     });
   });
 
-  // Partnerji otrok/vnukov = snaha (žena sina/vnuka) ali zet (mož hčere/vnukinje)
-  Object.keys(descendantDist).forEach(id => {
+  // Partnerji NEPOSREDNIH otrok = snaha/zet (samo prva generacija potomcev!)
+  Object.entries(descendantDist).forEach(([id, d]) => {
+    if (d !== 1) return;
     (spousesOf[id] || []).forEach(spId => {
       if (!labels[spId] && spId !== mainId) {
         labels[spId] = label(spId, "Zet", "Snaha", "Zet/Snaha");
+      }
+    });
+  });
+
+  // Partnerji vnukov = "vnukov mož" / "vnukova žena" (druga generacija potomcev)
+  Object.entries(descendantDist).forEach(([id, d]) => {
+    if (d !== 2) return;
+    (spousesOf[id] || []).forEach(spId => {
+      if (!labels[spId] && spId !== mainId) {
+        labels[spId] = label(spId, "Vnukinjin mož", "Vnukova žena", "Vnukov partner/-ka");
       }
     });
   });

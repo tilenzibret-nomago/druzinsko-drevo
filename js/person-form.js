@@ -379,7 +379,7 @@ async function loadPerson(id) {
   }
 
   const headerEl = document.getElementById("person-name-header");
-  headerEl.textContent = `${data.first_name} ${data.last_name || ""}`.trim();
+  headerEl.textContent = `${data.first_name} ${data.last_name || data.maiden_name || ""}`.trim();
   headerEl.style.display = "block";
 
   document.getElementById("first_name").value = data.first_name || "";
