@@ -208,9 +208,21 @@ document.getElementById("person-form").addEventListener("submit", async (e) => {
     ({ error } = await supabaseClient.from("people").update(formData).eq("id", personId));
   } else {
     const user = await getCurrentUser();
+    if (!user) {
+      alert("Nisi prijavljen. Osveži stran in se ponovno prijavi.");
+      return;
+    }
     const result = await supabaseClient.from("people").insert({ ...formData, created_by: user.id }).select("id").single();
-    error = result.error;
-    newId = result.data?.id;
+    console.log("Insert rezultat:", result);
+    if (result.error) {
+      alert("Napaka pri shranjevanju: " + result.error.message + "\n(Podrobnosti: " + JSON.stringify(result.error) + ")");
+      return;
+    }
+    if (!result.data || !result.data.id) {
+      alert("Shranjevanje ni vrnilo ID-ja nove osebe. Preveri Supabase nastavitve.");
+      return;
+    }
+    newId = result.data.id;
   }
 
   if (error) {
