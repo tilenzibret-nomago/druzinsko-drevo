@@ -3,26 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Celotno drevo — Družinsko drevo</title>
+  <title>Seznam oseb — Družinsko drevo</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 </head>
 <body>
   <header>
-    <h1>Celoten pregled družine</h1>
+    <h1>Seznam vseh oseb</h1>
     <div>
-      <a href="index.html">← Pedigree pogled</a>
+      <a href="index.html" class="header-link">← Pedigree pogled</a>
       <button id="logout-btn">Odjava</button>
     </div>
   </header>
 
-  <main class="full-tree-main">
-    <p class="hint" style="margin-bottom:1rem;">
-      Vse osebe in povezave naenkrat. Vlecite za premikanje, s kolescem miške približajte/oddaljite.
-      Modra = moški, roza = ženska. Klik na osebo odpre urejanje.
-    </p>
-    <div id="NetworkView"></div>
+  <main class="list-main">
+    <div class="list-controls">
+      <input type="text" id="search-input" placeholder="🔍 Išči po imenu ali priimku ...">
+      <select id="sort-select">
+        <option value="name">Razvrsti: Ime</option>
+        <option value="birth">Razvrsti: Datum rojstva</option>
+        <option value="last_name">Razvrsti: Priimek</option>
+      </select>
+      <span id="result-count" class="result-count"></span>
+    </div>
+    <div id="people-list" class="people-list"></div>
   </main>
 
   <div id="edit-overlay" class="edit-overlay"></div>
@@ -36,15 +40,14 @@
 
   <script src="js/supabase-client.js"></script>
   <script src="js/auth.js"></script>
-  <script src="js/network-view.js"></script>
+  <script src="js/people-list.js"></script>
   <script>
     (async () => {
       await requireAuth();
-      await loadAndRenderNetwork();
+      await loadPeopleList();
     })();
 
     document.getElementById("logout-btn").addEventListener("click", signOut);
-
     document.getElementById("close-panel-btn").addEventListener("click", () => closeEditPanel());
     document.getElementById("edit-overlay").addEventListener("click", () => closeEditPanel());
 
@@ -52,13 +55,11 @@
       document.getElementById("edit-panel").classList.remove("open");
       document.getElementById("edit-overlay").classList.remove("open");
       document.getElementById("edit-panel-frame").src = "about:blank";
-      loadAndRenderNetwork();
+      loadPeopleList();
     }
 
     window.addEventListener("message", (e) => {
-      if (e.data === "person-saved" || e.data === "person-deleted") {
-        loadAndRenderNetwork();
-      }
+      if (e.data === "person-saved" || e.data === "person-deleted") loadPeopleList();
     });
 
     function openEditPanel(personId) {

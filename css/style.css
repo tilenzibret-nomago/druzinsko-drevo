@@ -206,6 +206,126 @@ body.embedded .person-name-header {
   display: block;
 }
 
+.header-link {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-left: 0.6rem;
+}
+
+.list-main {
+  padding: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.list-controls {
+  display: flex;
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
+  align-items: center;
+}
+
+.list-controls input {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.list-controls select {
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.result-count {
+  font-size: 0.8rem;
+  color: #a89a86;
+  white-space: nowrap;
+}
+
+.people-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.person-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: #fff;
+  border: 1px solid #ece5da;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.person-row:hover {
+  box-shadow: 0 4px 16px rgba(60,45,25,0.1);
+  transform: translateY(-1px);
+}
+
+.person-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  color: #fff;
+}
+
+.person-row.male .person-avatar { background: #6e93a3; }
+.person-row.female .person-avatar { background: #c17c94; }
+.person-row.other .person-avatar { background: #a89a86; }
+
+.person-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.person-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.person-name {
+  font-weight: 600;
+  color: #2b2622;
+  font-size: 0.98rem;
+}
+
+.person-name .maiden {
+  font-weight: 400;
+  color: #a89a86;
+  font-size: 0.85rem;
+}
+
+.person-meta {
+  font-size: 0.82rem;
+  color: #8a8074;
+  margin-top: 0.1rem;
+}
+
+.person-arrow {
+  color: #c3b4a0;
+  font-size: 1.1rem;
+}
+
 .login-box input {
   width: 100%;
   padding: 0.6rem;
