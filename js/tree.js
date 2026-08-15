@@ -228,6 +228,27 @@ function addArrowsToTreeLinks() {
   });
 }
 
+function centerOnPerson(id) {
+  // Family-chart postavi izbrano osebo strukturno v središče drevesa (main),
+  // tukaj poskrbimo, da je tudi VIZUALNO v središču zaslona (scroll).
+  const trySelectors = [
+    `[data-id="${id}"]`,
+    `#${CSS.escape(id)}`,
+    `g[id="${id}"]`,
+  ];
+  let el = null;
+  for (const sel of trySelectors) {
+    el = document.querySelector(sel);
+    if (el) break;
+  }
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+  } else {
+    // Če kartice ne najdemo neposredno, vsaj poskrbi, da je drevo samo vidno na sredini strani
+    document.getElementById("FamilyChart").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
 function recomputeLabelsAndRerender(mainId) {
   currentMainId = mainId;
   const labels = computeRelationLabels(mainId, rawPeople, rawPartnerships, rawParentChild);
@@ -241,6 +262,7 @@ function recomputeLabelsAndRerender(mainId) {
   }
   f3ChartInstance.updateTree({});
   setTimeout(addArrowsToTreeLinks, 400);
+  setTimeout(() => centerOnPerson(mainId), 450);
 }
 
 async function loadAndRenderTree() {
@@ -281,6 +303,7 @@ async function loadAndRenderTree() {
 
   setTimeout(addArrowsToTreeLinks, 400);
   setTimeout(addArrowsToTreeLinks, 1000);
+  setTimeout(() => centerOnPerson(currentMainId), 450);
 }
 
 function selectPerson(id, cardData) {
