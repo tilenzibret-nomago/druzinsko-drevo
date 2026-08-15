@@ -158,7 +158,8 @@ document.getElementById("add-child-btn").addEventListener("click", async () => {
 async function loadPerson(id) {
   const { data, error } = await supabaseClient.from("people").select("*").eq("id", id).single();
   if (error) {
-    console.error("Napaka pri nalaganju osebe:", error.message);
+    alert("Te osebe ni bilo mogoče najti (morda je bila izbrisana, ali je povezava zastarela). Preusmerjam te nazaj na drevo.");
+    window.location.href = "index.html";
     return;
   }
   document.getElementById("first_name").value = data.first_name || "";
@@ -205,7 +206,13 @@ document.getElementById("person-form").addEventListener("submit", async (e) => {
 
   let error, newId;
   if (personId) {
-    ({ error } = await supabaseClient.from("people").update(formData).eq("id", personId));
+    const updateResult = await supabaseClient.from("people").update(formData).eq("id", personId).select("id");
+    error = updateResult.error;
+    if (!error && (!updateResult.data || updateResult.data.length === 0)) {
+      alert("Ta oseba ne obstaja več v bazi (posodobljenih 0 vrstic). Preusmerjam te na drevo.");
+      window.location.href = "index.html";
+      return;
+    }
   } else {
     const user = await getCurrentUser();
     if (!user) {
