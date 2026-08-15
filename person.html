@@ -44,6 +44,26 @@
       </div>
 
       <div class="relation-block">
+        <h3>Bratje/sestre</h3>
+        <ul id="siblings-list" class="relation-list"></ul>
+        <div class="add-relation">
+          <select id="sibling-select"></select>
+          <button type="button" id="add-sibling-btn">Dodaj obstoječega</button>
+        </div>
+        <div class="new-person-inline">
+          <input type="text" id="sibling-new-first" placeholder="Ime novega brata/sestre">
+          <input type="text" id="sibling-new-last" placeholder="Priimek">
+          <select id="sibling-new-gender">
+            <option value="M">Moški</option>
+            <option value="F">Ženski</option>
+            <option value="O">Drugo</option>
+          </select>
+          <button type="button" id="sibling-new-btn" class="new-person-btn">+ Ustvari novo osebo in poveži</button>
+        </div>
+        <p id="sibling-no-parents-hint" class="hint" style="display:none;">Ta oseba še nima dodanih staršev — brate/sestre lahko dodaš šele, ko dodaš vsaj enega starša zgoraj.</p>
+      </div>
+
+      <div class="relation-block">
         <h3>Partner/-ka</h3>
         <ul id="partners-list" class="relation-list"></ul>
         <div class="add-relation">

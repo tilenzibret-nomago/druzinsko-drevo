@@ -54,6 +54,7 @@ async function initRelations() {
   await renderParents();
   await renderPartners();
   await renderChildren();
+  await renderSiblings();
 }
 
 function populateSelect(selectId, people) {
@@ -116,6 +117,102 @@ function attachRemoveHandlers() {
     };
   });
 }
+
+// ---------- BRATJE/SESTRE ----------
+// Logika: brat/sestra = druga oseba, ki ima iste starše kot trenutna oseba.
+
+let currentParentIds = [];
+
+async function renderSiblings() {
+  const { data: parentRows } = await supabaseClient.from("parent_child").select("parent_id").eq("child_id", personId);
+  currentParentIds = (parentRows || []).map(r => r.parent_id);
+
+  const addRelationDiv = document.querySelector("#sibling-select").closest(".add-relation");
+  const newPersonDiv = document.getElementById("sibling-new-first").closest(".new-person-inline");
+  const hint = document.getElementById("sibling-no-parents-hint");
+
+  if (currentParentIds.length === 0) {
+    addRelationDiv.style.display = "none";
+    newPersonDiv.style.display = "none";
+    hint.style.display = "block";
+    document.getElementById("siblings-list").innerHTML = "<li class='muted'>Ni dodanih staršev, zato ni mogoče prikazati bratov/sester.</li>";
+    return;
+  }
+
+  addRelationDiv.style.display = "flex";
+  newPersonDiv.style.display = "flex";
+  hint.style.display = "none";
+
+  // Sorojenci = vse osebe, ki imajo vsaj enega skupnega starša, razen trenutne osebe same
+  const { data: siblingRows } = await supabaseClient.from("parent_child").select("child_id").in("parent_id", currentParentIds);
+  const siblingIds = [...new Set((siblingRows || []).map(r => r.child_id))].filter(id => id !== personId);
+
+  const list = document.getElementById("siblings-list");
+  list.innerHTML = siblingIds.map(id => `
+    <li>${personLabel(id)}</li>`).join("") || "<li class='muted'>Ni dodanih bratov/sester.</li>";
+
+  // Dropdown za obstoječe osebe: izloči trenutno osebo IN že obstoječe sorojence
+  const candidates = allPeople.filter(p => !siblingIds.includes(p.id));
+  populateSelect("sibling-select", candidates);
+}
+
+document.getElementById("add-sibling-btn").addEventListener("click", async () => {
+  const siblingId = document.getElementById("sibling-select").value;
+  if (!siblingId) {
+    alert("Najprej izberi osebo iz seznama.");
+    return;
+  }
+  for (const parentId of currentParentIds) {
+    const { error } = await supabaseClient.from("parent_child").insert({
+      parent_id: parentId, child_id: siblingId, relation_type: "biological",
+    });
+    if (error && !error.message.includes("duplicate")) {
+      alert("Napaka: " + error.message);
+      return;
+    }
+  }
+  await renderSiblings();
+});
+
+document.getElementById("sibling-new-btn").addEventListener("click", async () => {
+  const firstName = document.getElementById("sibling-new-first").value.trim();
+  const lastName = document.getElementById("sibling-new-last").value.trim();
+  const gender = document.getElementById("sibling-new-gender").value;
+
+  if (!firstName) {
+    alert("Vpiši vsaj ime nove osebe.");
+    return;
+  }
+  if (currentParentIds.length === 0) {
+    alert("Ta oseba še nima dodanih staršev.");
+    return;
+  }
+
+  const user = await getCurrentUser();
+  const personResult = await supabaseClient.from("people").insert({
+    first_name: firstName, last_name: lastName || null, gender, created_by: user.id,
+  }).select("id").single();
+
+  if (personResult.error) {
+    alert("Napaka pri ustvarjanju osebe: " + personResult.error.message);
+    return;
+  }
+
+  const newPersonId = personResult.data.id;
+  for (const parentId of currentParentIds) {
+    const { error } = await supabaseClient.from("parent_child").insert({
+      parent_id: parentId, child_id: newPersonId, relation_type: "biological",
+    });
+    if (error) {
+      alert("Oseba je bila ustvarjena, a povezave ni bilo mogoče dodati: " + error.message);
+      return;
+    }
+  }
+
+  document.getElementById("sibling-new-first").value = "";
+  document.getElementById("sibling-new-last").value = "";
+  await initRelations();
+});
 
 document.getElementById("parent-new-btn").addEventListener("click", async () => {
   await createAndLink({
