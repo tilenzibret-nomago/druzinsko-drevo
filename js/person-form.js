@@ -1,5 +1,20 @@
 // Dodajanje / urejanje osebe
 
+// Pretvorba dd.mm.llll <-> yyyy-mm-dd (baza pričakuje ISO format)
+function euToIso(euDate) {
+  if (!euDate) return null;
+  const match = euDate.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (!match) return null;
+  const [, day, month, year] = match;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function isoToEu(isoDate) {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-");
+  return `${day}.${month}.${year}`;
+}
+
 const urlParams = new URLSearchParams(window.location.search);
 const personId = urlParams.get("id");
 
@@ -34,7 +49,12 @@ async function initRelations() {
 
 function populateSelect(selectId, people) {
   const select = document.getElementById(selectId);
-  select.innerHTML = people.map(p => `<option value="${p.id}">${p.first_name} ${p.last_name || ""}</option>`).join("");
+  if (people.length === 0) {
+    select.innerHTML = `<option value="">— najprej dodaj drugo osebo —</option>`;
+  } else {
+    select.innerHTML = `<option value="">— izberi osebo —</option>` +
+      people.map(p => `<option value="${p.id}">${p.first_name} ${p.last_name || ""}</option>`).join("");
+  }
 }
 
 function personLabel(id) {
@@ -91,7 +111,10 @@ function attachRemoveHandlers() {
 document.getElementById("add-parent-btn").addEventListener("click", async () => {
   const parentId = document.getElementById("parent-select").value;
   const relationType = document.getElementById("parent-relation-type").value;
-  if (!parentId) return;
+  if (!parentId) {
+    alert("Najprej izberi osebo iz seznama. Če seznam ne vsebuje osebe, ki jo iščeš, jo najprej dodaj (Nazaj na drevo → + Dodaj osebo).");
+    return;
+  }
   const { error } = await supabaseClient.from("parent_child").insert({
     parent_id: parentId, child_id: personId, relation_type: relationType,
   });
@@ -102,7 +125,10 @@ document.getElementById("add-parent-btn").addEventListener("click", async () => 
 document.getElementById("add-partner-btn").addEventListener("click", async () => {
   const otherId = document.getElementById("partner-select").value;
   const type = document.getElementById("partner-type").value;
-  if (!otherId) return;
+  if (!otherId) {
+    alert("Najprej izberi osebo iz seznama. Če seznam ne vsebuje osebe, ki jo iščeš, jo najprej dodaj (Nazaj na drevo → + Dodaj osebo).");
+    return;
+  }
   const { error } = await supabaseClient.from("partnerships").insert({
     person1_id: personId, person2_id: otherId, type,
   });
@@ -113,7 +139,10 @@ document.getElementById("add-partner-btn").addEventListener("click", async () =>
 document.getElementById("add-child-btn").addEventListener("click", async () => {
   const childId = document.getElementById("child-select").value;
   const relationType = document.getElementById("child-relation-type").value;
-  if (!childId) return;
+  if (!childId) {
+    alert("Najprej izberi osebo iz seznama. Če seznam ne vsebuje osebe, ki jo iščeš, jo najprej dodaj (Nazaj na drevo → + Dodaj osebo).");
+    return;
+  }
   const { error } = await supabaseClient.from("parent_child").insert({
     parent_id: personId, child_id: childId, relation_type: relationType,
   });
@@ -131,23 +160,35 @@ async function loadPerson(id) {
   document.getElementById("last_name").value = data.last_name || "";
   document.getElementById("maiden_name").value = data.maiden_name || "";
   document.getElementById("gender").value = data.gender || "O";
-  document.getElementById("birth_date").value = data.birth_date || "";
+  document.getElementById("birth_date").value = isoToEu(data.birth_date);
   document.getElementById("birth_place").value = data.birth_place || "";
   document.getElementById("is_deceased").checked = data.is_deceased || false;
-  document.getElementById("death_date").value = data.death_date || "";
+  document.getElementById("death_date").value = isoToEu(data.death_date);
   document.getElementById("bio").value = data.bio || "";
 }
 
 function collectFormData() {
+  const birthEu = document.getElementById("birth_date").value;
+  const deathEu = document.getElementById("death_date").value;
+
+  if (birthEu && !euToIso(birthEu)) {
+    alert("Datum rojstva ni v pravilni obliki. Uporabi dd.mm.llll, npr. 15.08.1950.");
+    return null;
+  }
+  if (deathEu && !euToIso(deathEu)) {
+    alert("Datum smrti ni v pravilni obliki. Uporabi dd.mm.llll, npr. 3.4.2010.");
+    return null;
+  }
+
   return {
     first_name: document.getElementById("first_name").value,
     last_name: document.getElementById("last_name").value || null,
     maiden_name: document.getElementById("maiden_name").value || null,
     gender: document.getElementById("gender").value,
-    birth_date: document.getElementById("birth_date").value || null,
+    birth_date: euToIso(birthEu),
     birth_place: document.getElementById("birth_place").value || null,
     is_deceased: document.getElementById("is_deceased").checked,
-    death_date: document.getElementById("death_date").value || null,
+    death_date: euToIso(deathEu),
     bio: document.getElementById("bio").value || null,
   };
 }
@@ -155,6 +196,7 @@ function collectFormData() {
 document.getElementById("person-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const formData = collectFormData();
+  if (!formData) return;
 
   let error, newId;
   if (personId) {

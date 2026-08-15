@@ -18,6 +18,12 @@ async function fetchFamilyData() {
   return buildFamilyChartData(people, partnerships, parentChild);
 }
 
+function isoToEuDisplay(isoDate) {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-");
+  return `${day}.${month}.${year}`;
+}
+
 function buildFamilyChartData(people, partnerships, parentChild) {
   const byId = {};
   people.forEach(p => {
@@ -27,7 +33,7 @@ function buildFamilyChartData(people, partnerships, parentChild) {
         "first name": p.first_name,
         "last name": p.last_name || "",
         gender: p.gender || "O",
-        birthday: p.birth_date || "",
+        birthday: isoToEuDisplay(p.birth_date),
         avatar: p.photo_url || "",
       },
       rels: { spouses: [], children: [] },
