@@ -18,8 +18,9 @@
 
     <div id="password-tab" class="tab-content">
       <p>Prijava ali registracija z geslom (deluje takoj, brez čakanja na e-mail).</p>
-      <input type="email" id="pw-email-input" placeholder="ime@example.com">
-      <input type="password" id="pw-password-input" placeholder="Geslo (vsaj 6 znakov)">
+      <input type="email" id="pw-email-input" placeholder="ime@example.com" autocomplete="off">
+      <input type="password" id="pw-password-input" placeholder="Geslo (vsaj 6 znakov)" autocomplete="off">
+      <label class="show-pw"><input type="checkbox" id="show-pw-check"> Pokaži geslo</label>
       <button id="signin-btn">Prijava</button>
       <button id="signup-btn" class="secondary">Ustvari nov račun</button>
       <p id="pw-status-msg"></p>
@@ -36,6 +37,10 @@
   <script src="js/supabase-client.js"></script>
   <script src="js/auth.js"></script>
   <script>
+    document.getElementById("show-pw-check").addEventListener("change", (e) => {
+      document.getElementById("pw-password-input").type = e.target.checked ? "text" : "password";
+    });
+
     document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));

@@ -85,6 +85,16 @@ main {
   border: 1px solid #8a6d4f;
 }
 
+.show-pw {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #8a8074;
+  margin: -0.5rem 0 0.75rem;
+  width: auto;
+}
+
 .tabs {
   display: flex;
   margin: 1.5rem 0 1rem;
