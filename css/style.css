@@ -3,7 +3,7 @@
 body {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   margin: 0;
-  background: #faf8f5;
+  background: #f5f2ed;
   color: #2b2622;
 }
 
@@ -11,28 +11,34 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  background: #3d3229;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #4a3b2f 0%, #3d3229 100%);
   color: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 
-header h1 { font-size: 1.2rem; margin: 0; }
+header h1 { font-size: 1.3rem; margin: 0; font-weight: 600; letter-spacing: 0.02em; }
 
 header a, header button {
-  background: #8a6d4f;
+  background: rgba(255,255,255,0.12);
   color: #fff;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
   cursor: pointer;
   text-decoration: none;
   font-size: 0.9rem;
-  margin-left: 0.5rem;
+  margin-left: 0.6rem;
+  transition: background 0.15s ease;
+}
+
+header a:hover, header button:hover {
+  background: rgba(255,255,255,0.22);
 }
 
 main {
   padding: 1.5rem;
-  max-width: 900px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -40,34 +46,137 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f0ebe3;
-  color: #3d3229;
-  padding: 0.7rem 1.5rem;
+  background: #fff;
+  color: #2b2622;
+  padding: 0.9rem 2rem;
   font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-bottom: 1px solid #ece5da;
 }
 
-.selected-bar a {
-  color: #8a6d4f;
-  font-weight: 600;
-  text-decoration: none;
+.selected-info {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
 }
 
-.selected-bar a:hover {
-  text-decoration: underline;
+.selected-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a89a86;
+}
+
+.selected-info strong {
+  font-size: 1.1rem;
+  color: #3d3229;
+}
+
+.edit-btn {
+  background: #8a6d4f;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.3rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.edit-btn:hover {
+  background: #765d41;
+  transform: translateY(-1px);
 }
 
 #FamilyChart {
   width: 100%;
-  height: 75vh;
+  height: 78vh;
   background: #fff;
-  border-radius: 10px;
-  border: 1px solid #e5ddd3;
+  border-radius: 16px;
+  border: 1px solid #ece5da;
+  box-shadow: 0 4px 24px rgba(60,45,25,0.06);
 }
 
 .empty-state {
   text-align: center;
   padding: 3rem;
   color: #8a8074;
+}
+
+/* --- Stranski panel (drawer) za urejanje --- */
+.edit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 22, 15, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 40;
+}
+
+.edit-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.edit-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: min(480px, 92vw);
+  background: #faf8f5;
+  box-shadow: -8px 0 30px rgba(0,0,0,0.18);
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+
+.edit-panel.open {
+  transform: translateX(0);
+}
+
+.edit-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #3d3229;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.close-panel-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.3rem;
+}
+
+.edit-panel-frame {
+  flex: 1;
+  border: none;
+  width: 100%;
+}
+
+body.embedded {
+  background: #faf8f5;
+}
+
+body.embedded main {
+  padding: 1.25rem;
+  max-width: none;
+}
+
+body.embedded .person-name-header {
+  margin-top: 0;
 }
 
 .login-box {

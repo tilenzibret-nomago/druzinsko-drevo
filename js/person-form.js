@@ -16,6 +16,21 @@ function isoToEu(isoDate) {
 }
 
 const urlParams = new URLSearchParams(window.location.search);
+const isEmbedded = urlParams.get("embed") === "1";
+
+if (isEmbedded) {
+  document.addEventListener("DOMContentLoaded", () => {
+    const header = document.getElementById("person-page-header");
+    if (header) header.style.display = "none";
+    document.body.classList.add("embedded");
+  });
+}
+
+function notifyParent(message) {
+  if (isEmbedded && window.parent) {
+    window.parent.postMessage(message, "*");
+  }
+}
 const personId = urlParams.get("id");
 
 async function init() {
@@ -444,9 +459,14 @@ document.getElementById("person-form").addEventListener("submit", async (e) => {
 
   if (!personId && newId) {
     // Novo osebo preusmeri nazaj na isto stran z ID-jem, da lahko doda povezave
-    window.location.href = `person.html?id=${newId}&saved=1`;
+    if (isEmbedded) {
+      window.location.href = `person.html?id=${newId}&saved=1&embed=1`;
+    } else {
+      window.location.href = `person.html?id=${newId}&saved=1`;
+    }
   } else {
-    window.location.href = "index.html";
+    notifyParent("person-saved");
+    if (!isEmbedded) window.location.href = "index.html";
   }
 });
 
@@ -457,7 +477,8 @@ document.getElementById("delete-btn").addEventListener("click", async () => {
     alert("Napaka pri brisanju: " + error.message);
     return;
   }
-  window.location.href = "index.html";
+  notifyParent("person-deleted");
+  if (!isEmbedded) window.location.href = "index.html";
 });
 
 init();

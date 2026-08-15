@@ -20,13 +20,25 @@
   </header>
 
   <div id="selected-bar" class="selected-bar" style="display:none;">
-    <span>Izbrana oseba: <strong id="selected-person-name"></strong></span>
-    <a id="edit-selected-link" href="#">Uredi / dodaj sorodnike →</a>
+    <div class="selected-info">
+      <span class="selected-label">Izbrana oseba</span>
+      <strong id="selected-person-name"></strong>
+    </div>
+    <button id="edit-selected-btn" class="edit-btn">Uredi / dodaj sorodnike</button>
   </div>
 
   <main>
     <div id="FamilyChart" class="f3"></div>
   </main>
+
+  <div id="edit-overlay" class="edit-overlay"></div>
+  <aside id="edit-panel" class="edit-panel">
+    <div class="edit-panel-header">
+      <span>Urejanje osebe</span>
+      <button id="close-panel-btn" class="close-panel-btn" aria-label="Zapri">×</button>
+    </div>
+    <iframe id="edit-panel-frame" class="edit-panel-frame" src="about:blank"></iframe>
+  </aside>
 
   <script src="js/supabase-client.js"></script>
   <script src="js/auth.js"></script>
@@ -39,7 +51,35 @@
 
     document.getElementById("logout-btn").addEventListener("click", signOut);
     document.getElementById("add-person-btn").addEventListener("click", () => {
-      window.location.href = "person.html";
+      openEditPanel(null);
+    });
+
+    document.getElementById("edit-selected-btn").addEventListener("click", () => {
+      if (window.currentSelectedPersonId) openEditPanel(window.currentSelectedPersonId);
+    });
+
+    function openEditPanel(personId) {
+      const frame = document.getElementById("edit-panel-frame");
+      frame.src = personId ? `person.html?id=${personId}&embed=1` : `person.html?embed=1`;
+      document.getElementById("edit-panel").classList.add("open");
+      document.getElementById("edit-overlay").classList.add("open");
+    }
+
+    function closeEditPanel(shouldRefresh) {
+      document.getElementById("edit-panel").classList.remove("open");
+      document.getElementById("edit-overlay").classList.remove("open");
+      document.getElementById("edit-panel-frame").src = "about:blank";
+      if (shouldRefresh) loadAndRenderTree();
+    }
+
+    document.getElementById("close-panel-btn").addEventListener("click", () => closeEditPanel(true));
+    document.getElementById("edit-overlay").addEventListener("click", () => closeEditPanel(true));
+
+    // Sporočilo iz iframe-a (person.html), ko je oseba shranjena/izbrisana
+    window.addEventListener("message", (e) => {
+      if (e.data === "person-saved" || e.data === "person-deleted") {
+        loadAndRenderTree();
+      }
     });
   </script>
 </body>

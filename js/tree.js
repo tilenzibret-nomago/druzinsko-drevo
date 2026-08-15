@@ -37,9 +37,8 @@ function isoToEuDisplay(isoDate) {
 function buildFamilyChartData(people, partnerships, parentChild, relationLabels) {
   const byId = {};
   people.forEach(p => {
-    const lifespan = p.is_deceased
-      ? `${isoToEuDisplay(p.birth_date) || "?"} † ${isoToEuDisplay(p.death_date) || "?"}`
-      : isoToEuDisplay(p.birth_date);
+    const birthLine = p.birth_date ? `* ${isoToEuDisplay(p.birth_date)}` : "";
+    const deathLine = p.is_deceased ? `† ${isoToEuDisplay(p.death_date) || "neznan datum"}` : "";
 
     byId[p.id] = {
       id: p.id,
@@ -47,7 +46,8 @@ function buildFamilyChartData(people, partnerships, parentChild, relationLabels)
         "first name": p.first_name,
         "last name": p.last_name || "",
         gender: p.gender || "O",
-        birthday: lifespan,
+        birthday: birthLine,
+        deathday: deathLine,
         avatar: p.photo_url || "",
         relation: relationLabels?.[p.id] || "",
       },
@@ -303,14 +303,14 @@ async function loadAndRenderTree() {
 
   const f3Chart = f3.createChart("#FamilyChart", initialData)
     .setTransitionTime(800)
-    .setCardXSpacing(250)
-    .setCardYSpacing(170)
+    .setCardXSpacing(280)
+    .setCardYSpacing(190)
     .setOrientationVertical();
   f3ChartInstance = f3Chart;
 
   const f3Card = f3Chart.setCard(f3.CardHtml)
-    .setCardDisplay([["first name", "last name"], ["relation"], ["birthday"]])
-    .setCardDim({})
+    .setCardDisplay([["first name", "last name"], ["relation"], ["birthday"], ["deathday"]])
+    .setCardDim({ width: 230, height: 90 })
     .setMiniTree(true)
     .setStyle("imageRect")
     .setOnHoverPathToMain();
@@ -331,11 +331,10 @@ async function loadAndRenderTree() {
 function selectPerson(id, cardData) {
   const bar = document.getElementById("selected-bar");
   const nameEl = document.getElementById("selected-person-name");
-  const editLink = document.getElementById("edit-selected-link");
 
   const firstName = cardData?.["first name"] || cardData?.data?.["first name"] || "";
   const lastName = cardData?.["last name"] || cardData?.data?.["last name"] || "";
   nameEl.textContent = `${firstName} ${lastName}`.trim();
-  editLink.href = `person.html?id=${id}`;
+  window.currentSelectedPersonId = id;
   bar.style.display = "flex";
 }
