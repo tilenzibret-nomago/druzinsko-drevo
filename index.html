@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Družinsko drevo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/family-chart/dist/styles/family-chart.css">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/family-chart/dist/family-chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Družinsko drevo</h1>
+    <div>
+      <button id="add-person-btn">+ Dodaj osebo</button>
+      <button id="logout-btn">Odjava</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="FamilyChart" class="f3"></div>
+  </main>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/tree.js"></script>
+  <script>
+    (async () => {
+      await requireAuth();
+      await loadAndRenderTree();
+    })();
+
+    document.getElementById("logout-btn").addEventListener("click", signOut);
+    document.getElementById("add-person-btn").addEventListener("click", () => {
+      window.location.href = "person.html";
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prijava — Družinsko drevo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="login-box">
+    <h1>Družinsko drevo</h1>
+    <p>Vpiši svoj e-mail, dobil boš povezavo za prijavo.</p>
+    <input type="email" id="email-input" placeholder="ime@example.com">
+    <button id="login-btn">Pošlji povezavo</button>
+    <p id="status-msg"></p>
+  </div>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.getElementById("login-btn").addEventListener("click", async () => {
+      const email = document.getElementById("email-input").value;
+      const statusEl = document.getElementById("status-msg");
+      if (!email) return;
+      const ok = await signInWithEmail(email);
+      statusEl.textContent = ok
+        ? "Povezava poslana! Preveri e-pošto."
+        : "Prišlo je do napake, poskusi znova.";
+    });
+  </script>
+</body>
+</html>
