@@ -82,6 +82,8 @@ function addArrowsToTreeLinks() {
   });
 }
 
+let f3ChartInstance = null;
+
 async function loadAndRenderTree() {
   const data = await fetchFamilyData();
   const container = document.getElementById("FamilyChart");
@@ -96,6 +98,7 @@ async function loadAndRenderTree() {
     .setCardXSpacing(250)
     .setCardYSpacing(150)
     .setOrientationVertical();
+  f3ChartInstance = f3Chart;
 
   const f3Card = f3Chart.setCard(f3.CardHtml)
     .setCardDisplay([["first name", "last name"], ["birthday"]])
@@ -105,7 +108,13 @@ async function loadAndRenderTree() {
     .setOnHoverPathToMain();
 
   f3Card.setOnCardClick((e, d) => {
-    window.location.href = `person.html?id=${d.data.id}`;
+    // Klik na osebo jo postavi v središče drevesa (namesto takojšnje navigacije na urejanje)
+    selectPerson(d.data.id, d.data);
+    if (f3Chart.updateMainId) {
+      f3Chart.updateMainId(d.data.id);
+    }
+    f3Chart.updateTree({});
+    setTimeout(addArrowsToTreeLinks, 400);
   });
 
   f3Chart.updateTree({ initial: true });
@@ -113,4 +122,16 @@ async function loadAndRenderTree() {
   // Puščice na povezavah se izrišejo z zamikom, ko family-chart konča z animacijo
   setTimeout(addArrowsToTreeLinks, 400);
   setTimeout(addArrowsToTreeLinks, 1000);
+}
+
+function selectPerson(id, cardData) {
+  const bar = document.getElementById("selected-bar");
+  const nameEl = document.getElementById("selected-person-name");
+  const editLink = document.getElementById("edit-selected-link");
+
+  const firstName = cardData?.["first name"] || cardData?.data?.["first name"] || "";
+  const lastName = cardData?.["last name"] || cardData?.data?.["last name"] || "";
+  nameEl.textContent = `${firstName} ${lastName}`.trim();
+  editLink.href = `person.html?id=${id}`;
+  bar.style.display = "flex";
 }
