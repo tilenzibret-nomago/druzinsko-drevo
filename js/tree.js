@@ -37,13 +37,17 @@ function isoToEuDisplay(isoDate) {
 function buildFamilyChartData(people, partnerships, parentChild, relationLabels) {
   const byId = {};
   people.forEach(p => {
+    const lifespan = p.is_deceased
+      ? `${isoToEuDisplay(p.birth_date) || "?"} † ${isoToEuDisplay(p.death_date) || "?"}`
+      : isoToEuDisplay(p.birth_date);
+
     byId[p.id] = {
       id: p.id,
       data: {
         "first name": p.first_name,
         "last name": p.last_name || "",
         gender: p.gender || "O",
-        birthday: isoToEuDisplay(p.birth_date),
+        birthday: lifespan,
         avatar: p.photo_url || "",
         relation: relationLabels?.[p.id] || "",
       },
