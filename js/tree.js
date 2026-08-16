@@ -36,9 +36,24 @@ function isoToEuDisplay(isoDate) {
 
 function buildFamilyChartData(people, partnerships, parentChild, relationLabels) {
   const byId = {};
+  const peopleById = {};
+  people.forEach(p => { peopleById[p.id] = p; });
+
+  // Za vsako osebo poišči imena njenih dejanskih staršev (za jasen prikaz na kartici)
+  const parentNamesOf = {};
+  parentChild.forEach(rel => {
+    const parent = peopleById[rel.parent_id];
+    if (!parent) return;
+    (parentNamesOf[rel.child_id] ??= []).push(parent.first_name);
+  });
+
   people.forEach(p => {
     const birthLine = p.birth_date ? `* ${isoToEuDisplay(p.birth_date)}` : "";
     const deathLine = p.is_deceased ? `† ${isoToEuDisplay(p.death_date) || "neznan datum"}` : "";
+    const parentNames = parentNamesOf[p.id];
+    const parentsLine = parentNames && parentNames.length
+      ? `Starši: ${parentNames.join(" + ")}`
+      : "";
 
     byId[p.id] = {
       id: p.id,
@@ -48,6 +63,7 @@ function buildFamilyChartData(people, partnerships, parentChild, relationLabels)
         gender: p.gender || "O",
         birthday: birthLine,
         deathday: deathLine,
+        parents: parentsLine,
         avatar: p.photo_url || "",
         relation: relationLabels?.[p.id] || "",
       },
@@ -337,8 +353,8 @@ async function loadAndRenderTree() {
   f3ChartInstance = f3Chart;
 
   const f3Card = f3Chart.setCard(f3.CardHtml)
-    .setCardDisplay([["first name", "last name"], ["relation"], ["birthday"], ["deathday"]])
-    .setCardDim({ width: 230, height: 90 })
+    .setCardDisplay([["first name", "last name"], ["relation"], ["parents"], ["birthday"], ["deathday"]])
+    .setCardDim({ width: 250, height: 105 })
     .setMiniTree(true)
     .setStyle("imageRect")
     .setOnHoverPathToMain();
