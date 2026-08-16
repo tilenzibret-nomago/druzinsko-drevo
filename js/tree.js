@@ -355,7 +355,7 @@ async function loadAndRenderTree() {
 
   const f3Card = f3Chart.setCard(f3.CardHtml)
     .setCardDisplay([["first name", "last name"], ["relation"], ["parents"], ["birthday"], ["deathday"]])
-    .setCardDim({ width: 250, height: 105 })
+    .setCardDim({ width: 260, height: 155 })
     .setMiniTree(true)
     .setStyle("imageRect")
     .setOnHoverPathToMain();
