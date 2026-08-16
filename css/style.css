@@ -326,6 +326,47 @@ body.embedded .person-name-header {
   font-size: 1.1rem;
 }
 
+.wt-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.wt-zoom-controls {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.wt-zoom-controls button {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #ece5da;
+  background: #fff;
+  color: #8a6d4f;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.wt-zoom-controls button:hover {
+  background: #f0ebe3;
+}
+
+#WholeTree {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #ece5da;
+  box-shadow: 0 4px 24px rgba(60,45,25,0.06);
+  overflow: hidden;
+}
+
+#WholeTree svg {
+  display: block;
+  cursor: grab;
+}
+
 .login-box input {
   width: 100%;
   padding: 0.6rem;
