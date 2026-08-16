@@ -102,6 +102,22 @@ function computeRelationLabels(mainId, people, partnerships, parentChild) {
     return neutral || male;
   };
 
+  // Vrne tip zveze med dvema osebama ('marriage' | 'partnership' | null)
+  const partnershipType = (id1, id2) => {
+    const rel = partnerships.find(r =>
+      (r.person1_id === id1 && r.person2_id === id2) ||
+      (r.person1_id === id2 && r.person2_id === id1)
+    );
+    return rel?.type || null;
+  };
+
+  const spouseLabel = (mainPersonId, spouseId, maleMarried, femaleMarried, malePartner, femalePartner) => {
+    const isMarried = partnershipType(mainPersonId, spouseId) === "marriage";
+    return isMarried
+      ? label(spouseId, maleMarried, femaleMarried)
+      : label(spouseId, malePartner, femalePartner, "Partner/-ka");
+  };
+
   const labels = {};
   if (!mainId || !genderById[mainId]) return labels;
   labels[mainId] = "— izbrana oseba —";
@@ -166,7 +182,7 @@ function computeRelationLabels(mainId, people, partnerships, parentChild) {
 
   // Partner
   (spousesOf[mainId] || []).forEach(id => {
-    if (!labels[id]) labels[id] = label(id, "Mož", "Žena", "Partner/-ka");
+    if (!labels[id]) labels[id] = spouseLabel(mainId, id, "Mož", "Žena", "Partner", "Partnerka");
   });
 
   // Bratje/sestre (skupni starš)
@@ -205,7 +221,7 @@ function computeRelationLabels(mainId, people, partnerships, parentChild) {
     if (d !== 1) return;
     (spousesOf[id] || []).forEach(spId => {
       if (!labels[spId] && spId !== mainId) {
-        labels[spId] = label(spId, "Zet", "Snaha", "Zet/Snaha");
+        labels[spId] = spouseLabel(id, spId, "Zet", "Snaha", "Partner", "Partnerka");
       }
     });
   });
