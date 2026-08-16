@@ -331,8 +331,8 @@ async function loadAndRenderTree() {
 
   const f3Chart = f3.createChart("#FamilyChart", initialData)
     .setTransitionTime(800)
-    .setCardXSpacing(280)
-    .setCardYSpacing(190)
+    .setCardXSpacing(340)
+    .setCardYSpacing(220)
     .setOrientationVertical();
   f3ChartInstance = f3Chart;
 
