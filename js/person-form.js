@@ -40,7 +40,9 @@ async function init() {
     statusEl.textContent = "✓ Oseba je bila uspešno shranjena! Zdaj lahko spodaj dodaš starše, partnerja ali otroke.";
     statusEl.classList.add("visible");
   }
-  document.getElementById("details-toggle").setAttribute("open", "");
+  const detailsEl = document.getElementById("details-toggle");
+  detailsEl.open = true;
+  detailsEl.setAttribute("open", "");
   if (personId) {
     document.getElementById("delete-btn").style.display = "inline-block";
     document.getElementById("relations-section").style.display = "block";
