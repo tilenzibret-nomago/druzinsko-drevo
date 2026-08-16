@@ -159,10 +159,20 @@ function computeRelationLabel(personA, personB, parentsOf, childrenOf, spousesOf
     relation = label(personB.id, "bratranec", "sestrična") + " (v drugem kolenu) — oba sta pravnuka istega prastarega starša";
   } else if (upSteps === 3 && downSteps === 1) {
     relation = label(personB.id, "stric", "teta") + " (starš staršev generacija)";
+  } else if (Math.abs(upSteps - downSteps) === 1 && Math.min(upSteps, downSteps) >= 1) {
+    // Razlika ene generacije - to je "mrzli" sorodnik (bližje, kot zveni)
+    const isAuntUncleLevel = Math.min(upSteps, downSteps) === 1;
+    const term = isAuntUncleLevel
+      ? label(personB.id, "mrzli stric", "mrzla teta")
+      : label(personB.id, "mrzli bratranec", "mrzla sestrična");
+    const direction = downSteps > upSteps
+      ? " (otrok tvojega bratranca/sestrične oz. nečaka/nečakinje — mlajša generacija)"
+      : " (bratranec/sestrična oz. stric/teta enega od tvojih staršev — starejša generacija)";
+    relation = term + direction;
   } else {
-    // Bolj oddaljeno/nesimetrično sorodstvo - opišemo preprosto, brez formalnih izrazov "koleno/odstavljen"
+    // Res oddaljeno in nesimetrično sorodstvo (razlika 2+ generacij)
     const ancestorName = `${personById(bestCommon)?.first_name || ""} ${personById(bestCommon)?.last_name || personById(bestCommon)?.maiden_name || ""}`.trim();
-    return `${name} in ti imata skupnega prednika (<strong>${ancestorName}</strong>): ti si od njega/nje oddaljen/-a ${upSteps} generacije, ${name} pa ${downSteps} generacije. Sorodstvo je torej precej oddaljeno in nesimetrično — natančen potek si oglej v spodnji verigi.`;
+    return `${name} in ti imata skupnega prednika (<strong>${ancestorName}</strong>): ti si od njega/nje oddaljen/-a ${upSteps} generacije, ${name} pa ${downSteps} generacije. Sorodstvo je precej oddaljeno in nesimetrično — natančen potek si oglej v spodnji verigi.`;
   }
 
   return `${name} je tvoj/-a <strong>${relation}</strong>.`;
