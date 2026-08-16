@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <title>Topola - avtomatski binarni test</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://pewu.github.io/topola/bundle.js"></script>
+  <style>
+    body { font-family: monospace; padding: 2rem; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div id="log">Zaganjam ...</div>
+
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const logEl = document.getElementById("log");
+    function log(msg) { logEl.textContent += msg + "\n"; console.log(msg); }
+
+    function euDate(iso) {
+      if (!iso) return "";
+      const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+      const [y, m, d] = iso.split("-");
+      return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+    }
+
+    function buildGedcom(people, partnerships, parentChild) {
+      const indiId = {};
+      people.forEach((p, i) => { indiId[p.id] = `I${i + 1}`; });
+      const famKey = (a, b) => [a, b].sort().join("|");
+      const famMap = {};
+
+      partnerships.forEach(pt => {
+        const p1 = people.find(p => p.id === pt.person1_id);
+        const p2 = people.find(p => p.id === pt.person2_id);
+        if (!p1 || !p2) return;
+        const husb = p1.gender === "M" ? p1 : (p2.gender === "M" ? p2 : p1);
+        const wife = husb === p1 ? p2 : p1;
+        const key = famKey(pt.person1_id, pt.person2_id);
+        famMap[key] = famMap[key] || { husb: husb.id, wife: wife.id, children: [] };
+      });
+
+      const parentsOfChild = {};
+      parentChild.forEach(pc => {
+        if (!indiId[pc.parent_id] || !indiId[pc.child_id]) return;
+        (parentsOfChild[pc.child_id] ??= []).push(pc.parent_id);
+      });
+      Object.entries(parentsOfChild).forEach(([childId, parentIds]) => {
+        if (parentIds.length === 2) {
+          const key = famKey(parentIds[0], parentIds[1]);
+          if (!famMap[key]) {
+            const p1 = people.find(p => p.id === parentIds[0]);
+            const p2 = people.find(p => p.id === parentIds[1]);
+            const husb = p1?.gender === "M" ? p1 : p2;
+            const wife = husb === p1 ? p2 : p1;
+            famMap[key] = { husb: husb?.id, wife: wife?.id, children: [] };
+          }
+          famMap[key].children.push(childId);
+        } else if (parentIds.length === 1) {
+          const key = "single_" + parentIds[0];
+          const parent = people.find(p => p.id === parentIds[0]);
+          famMap[key] = famMap[key] || (parent?.gender === "F"
+            ? { husb: null, wife: parentIds[0], children: [] }
+            : { husb: parentIds[0], wife: null, children: [] });
+          famMap[key].children.push(childId);
+        }
+      });
+
+      const famIds = {};
+      let famCounter = 1;
+      Object.keys(famMap).forEach(key => { famIds[key] = `F${famCounter++}`; });
+
+      const famsOf = {}, famcOf = {};
+      Object.entries(famMap).forEach(([key, fam]) => {
+        const fid = famIds[key];
+        if (fam.husb) (famsOf[fam.husb] ??= []).push(fid);
+        if (fam.wife) (famsOf[fam.wife] ??= []).push(fid);
+        fam.children.forEach(cid => { famcOf[cid] = fid; });
+      });
+
+      let ged = "0 HEAD\n1 GEDC\n2 VERS 5.5.1\n1 CHAR UTF-8\n";
+      people.forEach(p => {
+        const id = indiId[p.id];
+        ged += `0 @${id}@ INDI\n`;
+        ged += `1 NAME ${p.first_name || ""} /${p.last_name || p.maiden_name || ""}/\n`;
+        ged += `1 SEX ${p.gender === "M" ? "M" : p.gender === "F" ? "F" : "U"}\n`;
+        if (p.birth_date) ged += `1 BIRT\n2 DATE ${euDate(p.birth_date)}\n`;
+        if (p.is_deceased) {
+          ged += `1 DEAT Y\n`;
+          if (p.death_date) ged += `2 DATE ${euDate(p.death_date)}\n`;
+        }
+        (famsOf[p.id] || []).forEach(fid => { ged += `1 FAMS @${fid}@\n`; });
+        if (famcOf[p.id]) ged += `1 FAMC @${famcOf[p.id]}@\n`;
+      });
+      Object.entries(famMap).forEach(([key, fam]) => {
+        const fid = famIds[key];
+        ged += `0 @${fid}@ FAM\n`;
+        if (fam.husb && indiId[fam.husb]) ged += `1 HUSB @${indiId[fam.husb]}@\n`;
+        if (fam.wife && indiId[fam.wife]) ged += `1 WIFE @${indiId[fam.wife]}@\n`;
+        fam.children.forEach(cid => {
+          if (indiId[cid]) ged += `1 CHIL @${indiId[cid]}@\n`;
+        });
+      });
+      ged += "0 TRLR\n";
+      return { ged, indiId };
+    }
+
+    function testRender(people, partnerships, parentChild, startPersonId) {
+      const { ged, indiId } = buildGedcom(people, partnerships, parentChild);
+      const testDiv = document.createElement("div");
+      testDiv.style.display = "none";
+      testDiv.innerHTML = '<svg class="graph" id="testsvg"></svg>';
+      document.body.appendChild(testDiv);
+      try {
+        const json = topola.gedcomToJson(ged);
+        topola.createChart({
+          json,
+          svgSelector: "#testsvg",
+          chartType: topola.KinshipChart,
+          renderer: topola.DetailedRenderer,
+          colors: topola.ChartColors.COLOR_BY_SEX,
+        }).render({ startIndi: indiId[startPersonId] });
+        document.body.removeChild(testDiv);
+        return { ok: true };
+      } catch (err) {
+        document.body.removeChild(testDiv);
+        return { ok: false, error: err.message };
+      }
+    }
+
+    (async () => {
+      await requireAuth();
+      const { data: people } = await supabaseClient.from("people").select("*");
+      const { data: partnerships } = await supabaseClient.from("partnerships").select("*");
+      const { data: parentChild } = await supabaseClient.from("parent_child").select("*");
+
+      const tilen = people.find(p => p.first_name === "Tilen");
+      log(`Skupaj oseb: ${people.length}`);
+
+      // Binarno iskanje: dodajaj osebe po vrsti, dokler render ne pade
+      let lo = 1, hi = people.length;
+      let lastGood = 0, firstBad = people.length;
+
+      // Najprej preveri, ali sploh pade s celotnim naborom
+      const fullTest = testRender(people, partnerships, parentChild, tilen.id);
+      if (fullTest.ok) {
+        log("USPEH s celotnim naborom! Ni več napake.");
+        return;
+      }
+      log("Celoten nabor pade: " + fullTest.error);
+      log("Iščem natančno mejo z binarnim iskanjem ...");
+
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        const subset = people.slice(0, mid);
+        const ids = new Set(subset.map(p => p.id));
+        if (!ids.has(tilen.id)) subset.push(tilen); // Tilen mora biti vedno vključen
+        const subPartnerships = partnerships.filter(pt => ids.has(pt.person1_id) && ids.has(pt.person2_id));
+        const subParentChild = parentChild.filter(pc => ids.has(pc.parent_id) && ids.has(pc.child_id));
+
+        const result = testRender(subset, subPartnerships, subParentChild, tilen.id);
+        log(`Test z ${mid} osebami: ${result.ok ? "OK" : "PADE (" + result.error + ")"}`);
+
+        if (result.ok) {
+          lo = mid + 1;
+        } else {
+          hi = mid;
+        }
+      }
+
+      log(`\nMEJA NAJDENA: prvih ${lo - 1} oseb dela, oseba #${lo} povzroči padec.`);
+      log(`Problematična oseba: ${JSON.stringify(people[lo - 1])}`);
+    })();
+  </script>
+</body>
+</html>
