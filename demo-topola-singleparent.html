@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <title>Topola - test enostarševske družine</title>
+  <link rel="stylesheet" href="https://pewu.github.io/topola/topola.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://pewu.github.io/topola/bundle.js"></script>
+</head>
+<body>
+  <h1 id="status">Testiranje ...</h1>
+  <svg class="graph" id="tree" width="900" height="500"></svg>
+
+  <script>
+    // Samo oče + otrok, BREZ matere - test, ali je to res nemogoče
+    const ged = `0 HEAD
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I1@ INDI
+1 NAME Oce /Sam/
+1 SEX M
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Otrok /Sam/
+1 SEX M
+1 FAMC @F1@
+0 @F1@ FAM
+1 HUSB @I1@
+1 CHIL @I2@
+0 TRLR
+`;
+
+    const status = document.getElementById("status");
+    try {
+      const json = topola.gedcomToJson(ged);
+      console.log("JSON:", JSON.stringify(json, null, 2));
+      topola.createChart({
+        json,
+        svgSelector: "#tree",
+        chartType: topola.KinshipChart,
+        renderer: topola.DetailedRenderer,
+        colors: topola.ChartColors.COLOR_BY_SEX,
+      }).render({ startIndi: "I2" });
+      status.textContent = "Uspeh! Enostarševska družina DELUJE.";
+    } catch (err) {
+      status.textContent = "Napaka: " + err.message;
+      console.error(err);
+    }
+  </script>
+</body>
+</html>
