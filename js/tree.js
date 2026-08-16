@@ -112,10 +112,10 @@ function computeRelationLabels(mainId, people, partnerships, parentChild) {
   };
 
   const spouseLabel = (mainPersonId, spouseId, maleMarried, femaleMarried, malePartner, femalePartner) => {
-    const isMarried = partnershipType(mainPersonId, spouseId) === "marriage";
-    return isMarried
-      ? label(spouseId, maleMarried, femaleMarried)
-      : label(spouseId, malePartner, femalePartner, "Partner/-ka");
+    const type = partnershipType(mainPersonId, spouseId);
+    if (type === "marriage") return label(spouseId, maleMarried, femaleMarried);
+    if (type === "unknown") return "Starš skupnega otroka";
+    return label(spouseId, malePartner, femalePartner, "Partner/-ka");
   };
 
   const labels = {};
