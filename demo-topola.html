@@ -76,11 +76,12 @@
         if (included.has(pt.person2_id)) included.add(pt.person1_id);
       });
 
-      const people = allPeople.filter(p => included.has(p.id));
-      const partnerships = allPartnerships.filter(pt => included.has(pt.person1_id) && included.has(pt.person2_id));
-      const parentChild = allParentChild.filter(pc => included.has(pc.parent_id) && included.has(pc.child_id));
+      // Testiraj na VSEH osebah (ne le podmnožici)
+      const people = allPeople;
+      const partnerships = allPartnerships;
+      const parentChild = allParentChild;
 
-      status.textContent = `Testna podmnožica: ${people.length} oseb (namesto vseh ${allPeople.length}) ...`;
+      status.textContent = `Testna množica: vseh ${people.length} oseb ...`;
 
       const indiId = {};
       people.forEach((p, i) => { indiId[p.id] = `I${i + 1}`; });
@@ -114,8 +115,12 @@
           }
           famMap[key].children.push(childId);
         } else if (parentIds.length === 1) {
-          // Topola se sesuje na družinah z enim samim staršem - za zdaj izpustimo
-          // (izgubimo to povezavo v tem prototipu, a preprečimo napako)
+          const key = "single_" + parentIds[0];
+          const parent = people.find(p => p.id === parentIds[0]);
+          famMap[key] = famMap[key] || (parent?.gender === "F"
+            ? { husb: null, wife: parentIds[0], children: [] }
+            : { husb: parentIds[0], wife: null, children: [] });
+          famMap[key].children.push(childId);
         }
       });
 
@@ -159,6 +164,32 @@
       status.textContent = `Izrisujem ${people.length} oseb prek Topola knjižnice ...`;
       console.log("=== GENERIRAN GEDCOM ===");
       console.log(ged);
+
+      // Preveri, ali obstaja poroka med krvnimi sorodniki (kar lahko povzroči krožno pot v drevesu)
+      function findAncestors(id, depth, visited) {
+        if (depth <= 0) return visited;
+        (parentsOfChild[id] || []).forEach(pid => {
+          if (!visited.has(pid)) { visited.add(pid); findAncestors(pid, depth - 1, visited); }
+        });
+        return visited;
+      }
+      const suspiciousCouples = [];
+      partnerships.forEach(pt => {
+        const ancestors1 = findAncestors(pt.person1_id, 6, new Set());
+        const ancestors2 = findAncestors(pt.person2_id, 6, new Set());
+        if (ancestors1.has(pt.person2_id) || ancestors2.has(pt.person1_id)) {
+          suspiciousCouples.push(pt);
+        }
+        for (const a of ancestors1) {
+          if (ancestors2.has(a)) {
+            suspiciousCouples.push({ ...pt, skupni_prednik: a });
+            break;
+          }
+        }
+      });
+      if (suspiciousCouples.length) {
+        console.log("SUMLJIVI PARI (mogoč skupni prednik / krvno sorodstvo):", suspiciousCouples);
+      }
 
       try {
         const json = topola.gedcomToJson(ged);
