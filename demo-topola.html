@@ -83,9 +83,8 @@
           }
           famMap[key].children.push(childId);
         } else if (parentIds.length === 1) {
-          const key = "single_" + parentIds[0];
-          famMap[key] = famMap[key] || { husb: parentIds[0], wife: null, children: [] };
-          famMap[key].children.push(childId);
+          // Topola se sesuje na družinah z enim samim staršem - za zdaj izpustimo
+          // (izgubimo to povezavo v tem prototipu, a preprečimo napako)
         }
       });
 
