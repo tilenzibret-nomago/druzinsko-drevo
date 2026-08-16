@@ -17,6 +17,47 @@
   <main>
     <h2 id="person-name-header" class="person-name-header" style="display:none;"></h2>
 
+    <details id="details-toggle">
+      <summary id="details-summary">Osnovni podatki o osebi</summary>
+      <form id="person-form">
+        <label>Ime *
+          <input type="text" id="first_name" required>
+        </label>
+        <label>Priimek
+          <input type="text" id="last_name">
+        </label>
+        <label>Dekliški priimek
+          <input type="text" id="maiden_name">
+        </label>
+        <label>Spol
+          <select id="gender">
+            <option value="M">Moški</option>
+            <option value="F">Ženski</option>
+            <option value="O">Drugo</option>
+          </select>
+        </label>
+        <label>Datum rojstva (dd.mm.llll)
+          <input type="text" id="birth_date" placeholder="npr. 15.08.1950" pattern="\d{1,2}\.\d{1,2}\.\d{4}">
+        </label>
+        <label>Kraj rojstva
+          <input type="text" id="birth_place">
+        </label>
+        <label>
+          <input type="checkbox" id="is_deceased"> Pokojni/-a
+        </label>
+        <label>Datum smrti (dd.mm.llll)
+          <input type="text" id="death_date" placeholder="npr. 3.4.2010" pattern="\d{1,2}\.\d{1,2}\.\d{4}">
+        </label>
+        <label>Biografija
+          <textarea id="bio" rows="4"></textarea>
+        </label>
+
+        <button type="submit">Shrani</button>
+        <button type="button" id="delete-btn" style="display:none;">Izbriši osebo</button>
+        <p id="save-status" class="save-status"></p>
+      </form>
+    </details>
+
     <section id="relations-section" style="display:none;">
       <h2>Povezave</h2>
 
@@ -114,46 +155,6 @@
     </section>
     <p id="relations-hint" class="hint">Povezave lahko dodajaš po shranitvi osebe.</p>
 
-    <details id="details-toggle">
-      <summary id="details-summary">Osnovni podatki o osebi</summary>
-      <form id="person-form">
-        <label>Ime *
-          <input type="text" id="first_name" required>
-        </label>
-        <label>Priimek
-          <input type="text" id="last_name">
-        </label>
-        <label>Dekliški priimek
-          <input type="text" id="maiden_name">
-        </label>
-        <label>Spol
-          <select id="gender">
-            <option value="M">Moški</option>
-            <option value="F">Ženski</option>
-            <option value="O">Drugo</option>
-          </select>
-        </label>
-        <label>Datum rojstva (dd.mm.llll)
-          <input type="text" id="birth_date" placeholder="npr. 15.08.1950" pattern="\d{1,2}\.\d{1,2}\.\d{4}">
-        </label>
-        <label>Kraj rojstva
-          <input type="text" id="birth_place">
-        </label>
-        <label>
-          <input type="checkbox" id="is_deceased"> Pokojni/-a
-        </label>
-        <label>Datum smrti (dd.mm.llll)
-          <input type="text" id="death_date" placeholder="npr. 3.4.2010" pattern="\d{1,2}\.\d{1,2}\.\d{4}">
-        </label>
-        <label>Biografija
-          <textarea id="bio" rows="4"></textarea>
-        </label>
-
-        <button type="submit">Shrani</button>
-        <button type="button" id="delete-btn" style="display:none;">Izbriši osebo</button>
-        <p id="save-status" class="save-status"></p>
-      </form>
-    </details>
   </main>
 
   <script src="js/supabase-client.js"></script>
