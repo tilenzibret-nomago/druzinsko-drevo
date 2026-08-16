@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <title>Topola - minimalni test</title>
+  <link rel="stylesheet" href="https://pewu.github.io/topola/topola.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://pewu.github.io/topola/bundle.js"></script>
+</head>
+<body>
+  <h1 id="status">Testiranje ...</h1>
+  <svg class="graph" id="tree" width="900" height="500"></svg>
+
+  <script>
+    const ged = `0 HEAD
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I1@ INDI
+1 NAME Oce /Testni/
+1 SEX M
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Mati /Testna/
+1 SEX F
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Otrok1 /Testni/
+1 SEX M
+1 FAMC @F1@
+0 @I4@ INDI
+1 NAME Otrok2 /Testni/
+1 SEX F
+1 FAMC @F1@
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+1 CHIL @I4@
+0 TRLR
+`;
+
+    const status = document.getElementById("status");
+    try {
+      const json = topola.gedcomToJson(ged);
+      console.log("JSON:", json);
+      topola.createChart({
+        json,
+        svgSelector: "#tree",
+        chartType: topola.KinshipChart,
+        renderer: topola.DetailedRenderer,
+        colors: topola.ChartColors.COLOR_BY_SEX,
+      }).render({ startIndi: "I3" });
+      status.textContent = "Uspeh!";
+    } catch (err) {
+      status.textContent = "Napaka: " + err.message;
+      console.error(err);
+    }
+  </script>
+</body>
+</html>
