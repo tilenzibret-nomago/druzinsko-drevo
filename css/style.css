@@ -480,6 +480,55 @@ form button[type="submit"] {
   font-size: 0.85rem;
 }
 
+.photo-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.photo-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ece5da;
+}
+
+.photo-placeholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #f0ebe3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: #a89a86;
+  flex-shrink: 0;
+}
+
+.photo-upload-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.photo-upload-controls input[type="file"] {
+  font-size: 0.82rem;
+  width: auto;
+}
+
+.secondary-btn {
+  background: transparent;
+  color: #c0392b;
+  border: 1px solid #c0392b;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  width: fit-content;
+}
+
 .save-status {
   display: none;
   background: #e8f3e6;

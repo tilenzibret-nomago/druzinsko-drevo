@@ -390,6 +390,66 @@ async function loadPerson(id) {
   document.getElementById("is_deceased").checked = data.is_deceased || false;
   document.getElementById("death_date").value = isoToEu(data.death_date);
   document.getElementById("bio").value = data.bio || "";
+
+  currentPhotoUrl = data.photo_url || null;
+  updatePhotoPreview(currentPhotoUrl);
+}
+
+function updatePhotoPreview(url) {
+  const img = document.getElementById("photo-preview");
+  const placeholder = document.getElementById("photo-placeholder");
+  const removeBtn = document.getElementById("remove-photo-btn");
+  if (url) {
+    img.src = url;
+    img.style.display = "block";
+    placeholder.style.display = "none";
+    removeBtn.style.display = "inline-block";
+  } else {
+    img.style.display = "none";
+    placeholder.style.display = "flex";
+    removeBtn.style.display = "none";
+  }
+}
+
+let currentPhotoUrl = null;
+let pendingPhotoFile = null;
+let pendingPhotoRemoved = false;
+
+document.getElementById("photo-input").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Slika je prevelika (največ 5 MB).");
+    e.target.value = "";
+    return;
+  }
+  pendingPhotoFile = file;
+  pendingPhotoRemoved = false;
+  const reader = new FileReader();
+  reader.onload = (ev) => updatePhotoPreview(ev.target.result);
+  reader.readAsDataURL(file);
+});
+
+document.getElementById("remove-photo-btn").addEventListener("click", () => {
+  pendingPhotoFile = null;
+  pendingPhotoRemoved = true;
+  document.getElementById("photo-input").value = "";
+  updatePhotoPreview(null);
+});
+
+async function uploadPendingPhoto(targetPersonId) {
+  if (!pendingPhotoFile) return currentPhotoUrl;
+  const ext = pendingPhotoFile.name.split(".").pop() || "jpg";
+  const path = `${targetPersonId}.${ext}`;
+  const { error: uploadError } = await supabaseClient.storage
+    .from("family-photos")
+    .upload(path, pendingPhotoFile, { upsert: true, contentType: pendingPhotoFile.type });
+  if (uploadError) {
+    alert("Napaka pri nalaganju slike: " + uploadError.message);
+    return currentPhotoUrl;
+  }
+  const { data: publicUrlData } = supabaseClient.storage.from("family-photos").getPublicUrl(path);
+  return publicUrlData.publicUrl + "?t=" + Date.now(); // cache-bust
 }
 
 function collectFormData() {
@@ -418,6 +478,12 @@ function collectFormData() {
   };
 }
 
+async function resolvePhotoUrl(targetPersonId) {
+  if (pendingPhotoFile) return await uploadPendingPhoto(targetPersonId);
+  if (pendingPhotoRemoved) return null;
+  return currentPhotoUrl;
+}
+
 document.getElementById("person-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const formData = collectFormData();
@@ -425,6 +491,7 @@ document.getElementById("person-form").addEventListener("submit", async (e) => {
 
   let error, newId;
   if (personId) {
+    formData.photo_url = await resolvePhotoUrl(personId);
     const updateResult = await supabaseClient.from("people").update(formData).eq("id", personId).select("id");
     error = updateResult.error;
     if (!error && (!updateResult.data || updateResult.data.length === 0)) {
@@ -449,6 +516,10 @@ document.getElementById("person-form").addEventListener("submit", async (e) => {
       return;
     }
     newId = result.data.id;
+    if (pendingPhotoFile) {
+      const photoUrl = await uploadPendingPhoto(newId);
+      await supabaseClient.from("people").update({ photo_url: photoUrl }).eq("id", newId);
+    }
   }
 
   if (error) {

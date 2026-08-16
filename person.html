@@ -20,6 +20,16 @@
     <details id="details-toggle">
       <summary id="details-summary">Osnovni podatki o osebi</summary>
       <form id="person-form">
+        <label>Fotografija
+          <div class="photo-upload-row">
+            <img id="photo-preview" class="photo-preview" style="display:none;" alt="Fotografija osebe">
+            <div id="photo-placeholder" class="photo-placeholder">👤</div>
+            <div class="photo-upload-controls">
+              <input type="file" id="photo-input" accept="image/*">
+              <button type="button" id="remove-photo-btn" class="secondary-btn" style="display:none;">Odstrani sliko</button>
+            </div>
+          </div>
+        </label>
         <label>Ime *
           <input type="text" id="first_name" required>
         </label>
