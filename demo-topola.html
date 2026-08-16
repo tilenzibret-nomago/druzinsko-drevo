@@ -42,14 +42,45 @@
 
     async function loadTopolaDemo() {
       const status = document.getElementById("status");
-      const { data: people, error: e1 } = await supabaseClient.from("people").select("*");
-      const { data: partnerships, error: e2 } = await supabaseClient.from("partnerships").select("*");
-      const { data: parentChild, error: e3 } = await supabaseClient.from("parent_child").select("*");
+      const { data: allPeople, error: e1 } = await supabaseClient.from("people").select("*");
+      const { data: allPartnerships, error: e2 } = await supabaseClient.from("partnerships").select("*");
+      const { data: allParentChild, error: e3 } = await supabaseClient.from("parent_child").select("*");
 
       if (e1 || e2 || e3) {
         status.textContent = "Napaka pri nalaganju podatkov.";
         return;
       }
+
+      // Omeji na podmnožico okoli Tilna (3 generacije gor/dol), za lažje odpravljanje napak
+      const tilenRow = allPeople.find(p => p.first_name === "Tilen");
+      const parentsMap = {}, childrenMap = {};
+      allParentChild.forEach(pc => {
+        (parentsMap[pc.child_id] ??= []).push(pc.parent_id);
+        (childrenMap[pc.parent_id] ??= []).push(pc.child_id);
+      });
+
+      const included = new Set([tilenRow.id]);
+      function expandUp(id, depth) {
+        if (depth <= 0) return;
+        (parentsMap[id] || []).forEach(pid => { included.add(pid); expandUp(pid, depth - 1); });
+      }
+      function expandDown(id, depth) {
+        if (depth <= 0) return;
+        (childrenMap[id] || []).forEach(cid => { included.add(cid); expandDown(cid, depth - 1); });
+      }
+      expandUp(tilenRow.id, 3);
+      expandDown(tilenRow.id, 2);
+      // Dodaj tudi partnerje vključenih oseb
+      allPartnerships.forEach(pt => {
+        if (included.has(pt.person1_id)) included.add(pt.person2_id);
+        if (included.has(pt.person2_id)) included.add(pt.person1_id);
+      });
+
+      const people = allPeople.filter(p => included.has(p.id));
+      const partnerships = allPartnerships.filter(pt => included.has(pt.person1_id) && included.has(pt.person2_id));
+      const parentChild = allParentChild.filter(pc => included.has(pc.parent_id) && included.has(pc.child_id));
+
+      status.textContent = `Testna podmnožica: ${people.length} oseb (namesto vseh ${allPeople.length}) ...`;
 
       const indiId = {};
       people.forEach((p, i) => { indiId[p.id] = `I${i + 1}`; });
@@ -126,6 +157,8 @@
       ged += "0 TRLR\n";
 
       status.textContent = `Izrisujem ${people.length} oseb prek Topola knjižnice ...`;
+      console.log("=== GENERIRAN GEDCOM ===");
+      console.log(ged);
 
       try {
         const json = topola.gedcomToJson(ged);
