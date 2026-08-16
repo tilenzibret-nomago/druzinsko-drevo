@@ -40,16 +40,13 @@ async function init() {
     statusEl.textContent = "✓ Oseba je bila uspešno shranjena! Zdaj lahko spodaj dodaš starše, partnerja ali otroke.";
     statusEl.classList.add("visible");
   }
+  document.getElementById("details-toggle").setAttribute("open", "");
   if (personId) {
     document.getElementById("delete-btn").style.display = "inline-block";
     document.getElementById("relations-section").style.display = "block";
     document.getElementById("relations-hint").style.display = "none";
-    document.getElementById("details-toggle").removeAttribute("open");
     await loadPerson(personId);
     await initRelations();
-  } else {
-    // Nova oseba: osnovni podatki naj bodo takoj odprti
-    document.getElementById("details-toggle").setAttribute("open", "");
   }
 }
 

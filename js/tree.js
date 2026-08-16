@@ -359,8 +359,18 @@ async function loadAndRenderTree() {
     .setStyle("imageRect")
     .setOnHoverPathToMain();
 
+  let lastClickId = null, lastClickTime = 0;
   f3Card.setOnCardClick((e, d) => {
-    // Klik na osebo jo postavi v središče drevesa in preračuna nazive relativno nanjo
+    const now = Date.now();
+    if (d.data.id === lastClickId && now - lastClickTime < 400) {
+      // Dvojni klik: takoj odpri urejanje osebe
+      lastClickId = null;
+      if (window.openEditPanel) window.openEditPanel(d.data.id);
+      return;
+    }
+    lastClickId = d.data.id;
+    lastClickTime = now;
+    // Enojni klik: postavi osebo v središče drevesa in preračuna nazive relativno nanjo
     selectPerson(d.data.id, d.data);
     recomputeLabelsAndRerender(d.data.id);
   });
