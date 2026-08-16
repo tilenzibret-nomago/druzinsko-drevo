@@ -159,8 +159,14 @@ function computeRelationLabel(personA, personB, parentsOf, childrenOf, spousesOf
     relation = label(personB.id, "bratranec", "sestrična") + " (v drugem kolenu)";
   } else if (upSteps === 3 && downSteps === 1) {
     relation = label(personB.id, "stric", "teta") + " (starš staršev generacija)";
-  } else if (Math.abs(upSteps - downSteps) === 1 && Math.min(upSteps, downSteps) >= 2) {
-    relation = label(personB.id, "bratranec", "sestrična") + " (v kolenu, odstavljen/-a)";
+  } else if (Math.min(upSteps, downSteps) >= 2) {
+    const degree = Math.min(upSteps, downSteps) - 1;
+    const degreeWord = degree === 1 ? "prvem" : degree === 2 ? "drugem" : `${degree}.`;
+    if (downSteps > upSteps) {
+      relation = `otrok tvojega bratranca oz. sestrične v ${degreeWord} kolenu (mlajša generacija bratranske veje)`;
+    } else {
+      relation = `starš, ki je tvoj bratranec oz. sestrična v ${degreeWord} kolenu (starejša generacija bratranske veje)`;
+    }
   } else {
     relation = `sorodnik/-ca (skupni prednik ${upSteps} + ${downSteps} kolen stran)`;
   }
