@@ -71,6 +71,7 @@ function buildFamilyChartData(people, partnerships, parentChild, relationLabels)
     const parentPerson = people.find(p => p.id === rel.parent_id);
     if (parentPerson?.gender === "M") child.rels.father = rel.parent_id;
     else if (parentPerson?.gender === "F") child.rels.mother = rel.parent_id;
+    else if (!child.rels.father) child.rels.father = rel.parent_id; // varovalka: manjkajoč spol, a naj se vseeno poveže
   });
 
   return Object.values(byId);
