@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Primerjava knjižnic - Custom D3</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f5f2ed; margin: 0; padding: 2rem; }
+    h1 { color: #3d3229; font-size: 1.2rem; }
+    #chart { background: #fff; border-radius: 12px; padding: 2rem; }
+    .card-name { font-weight: 600; font-size: 13px; fill: #fff; }
+    .card-sub { font-size: 10.5px; fill: rgba(255,255,255,0.85); }
+    .link { stroke: #8a6d4f; stroke-width: 2; fill: none; }
+    .spouse-link { stroke: #c98a9c; stroke-width: 2; stroke-dasharray: 4,3; }
+  </style>
+</head>
+<body>
+  <h1>Custom D3 prikaz (ročno oblikovano, popoln nadzor)</h1>
+  <div id="chart"></div>
+
+  <script>
+    // Ožja družina - ročno vpisano za demo primerjavo
+    const people = [
+      { id: "adam-z", name: "Adam Žibret", sub: "* 1928 † 2021", gender: "M", x: 100, y: 60 },
+      { id: "stefanija", name: "Štefanija Žibret", sub: "roj. Privšek", gender: "F", x: 280, y: 60 },
+      { id: "ivan-u", name: "Ivan Urana", sub: "* 1933 † 1990", gender: "M", x: 520, y: 60 },
+      { id: "ivanka", name: "Ivanka Urana", sub: "roj. Marot", gender: "F", x: 700, y: 60 },
+
+      { id: "adam-d", name: "Adam Danijel Žibret", sub: "* 1952", gender: "M", x: 190, y: 220 },
+      { id: "boza", name: "Boža Žibret", sub: "roj. Urana", gender: "F", x: 400, y: 220 },
+      { id: "darja", name: "Darja Pušnik", sub: "roj. Žibret", gender: "F", x: 190, y: 380 },
+      { id: "miran", name: "Miran Pušnik", sub: "", gender: "M", x: 40, y: 380 },
+
+      { id: "tilen", name: "Tilen Žibret", sub: "* 1979", gender: "M", x: 330, y: 380 },
+      { id: "andraz", name: "Andraž Žibret", sub: "* 1985", gender: "M", x: 470, y: 380 },
+    ];
+
+    const parentLinks = [
+      ["adam-z","adam-d"], ["stefanija","adam-d"],
+      ["adam-z","darja"], ["stefanija","darja"],
+      ["adam-d","tilen"], ["boza","tilen"],
+      ["adam-d","andraz"], ["boza","andraz"],
+    ];
+    const spouseLinks = [["adam-z","stefanija"], ["ivan-u","ivanka"], ["adam-d","boza"], ["darja","miran"]];
+
+    const colors = { M: "#6e93a3", F: "#c17c94" };
+    const W = 220, H = 60;
+
+    const svg = d3.select("#chart").append("svg")
+      .attr("width", 900).attr("height", 460);
+
+    const byId = Object.fromEntries(people.map(p => [p.id, p]));
+
+    // Povezave starš-otrok (pravokotne linije, jasno vodene)
+    svg.selectAll(".link").data(parentLinks).join("path")
+      .attr("class", "link")
+      .attr("d", d => {
+        const p = byId[d[0]], c = byId[d[1]];
+        const midY = (p.y + H + c.y) / 2;
+        return `M${p.x + W/2},${p.y + H} L${p.x + W/2},${midY} L${c.x + W/2},${midY} L${c.x + W/2},${c.y}`;
+      });
+
+    // Partnerske povezave (vodoravne, črtkane)
+    svg.selectAll(".slink").data(spouseLinks).join("line")
+      .attr("class", "spouse-link")
+      .attr("x1", d => byId[d[0]].x + W)
+      .attr("y1", d => byId[d[0]].y + H/2)
+      .attr("x2", d => byId[d[1]].x)
+      .attr("y2", d => byId[d[1]].y + H/2);
+
+    const node = svg.selectAll(".node").data(people).join("g")
+      .attr("transform", d => `translate(${d.x},${d.y})`);
+
+    node.append("rect")
+      .attr("width", W).attr("height", H).attr("rx", 10)
+      .attr("fill", d => colors[d.gender]);
+
+    node.append("text").attr("class", "card-name")
+      .attr("x", 12).attr("y", 24).text(d => d.name);
+
+    node.append("text").attr("class", "card-sub")
+      .attr("x", 12).attr("y", 42).text(d => d.sub);
+  </script>
+</body>
+</html>
