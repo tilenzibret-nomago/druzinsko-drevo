@@ -154,21 +154,15 @@ function computeRelationLabel(personA, personB, parentsOf, childrenOf, spousesOf
   } else if (upSteps === 1 && downSteps === 2) {
     relation = label(personB.id, "nečak", "nečakinja");
   } else if (upSteps === 2 && downSteps === 2) {
-    relation = label(personB.id, "bratranec", "sestrična") + " (v prvem kolenu)";
+    relation = label(personB.id, "bratranec", "sestrična") + " (v prvem kolenu) — oba sta vnuka istega starega starša";
   } else if (upSteps === 3 && downSteps === 3) {
-    relation = label(personB.id, "bratranec", "sestrična") + " (v drugem kolenu)";
+    relation = label(personB.id, "bratranec", "sestrična") + " (v drugem kolenu) — oba sta pravnuka istega prastarega starša";
   } else if (upSteps === 3 && downSteps === 1) {
     relation = label(personB.id, "stric", "teta") + " (starš staršev generacija)";
-  } else if (Math.min(upSteps, downSteps) >= 2) {
-    const degree = Math.min(upSteps, downSteps) - 1;
-    const degreeWord = degree === 1 ? "prvem" : degree === 2 ? "drugem" : `${degree}.`;
-    if (downSteps > upSteps) {
-      relation = `otrok tvojega bratranca oz. sestrične v ${degreeWord} kolenu (mlajša generacija bratranske veje)`;
-    } else {
-      return `${name} je bratranec oz. sestrična <strong>enega od tvojih staršev</strong> (v ${degreeWord} kolenu) — torej starejša generacija bratranske veje.`;
-    }
   } else {
-    relation = `sorodnik/-ca (skupni prednik ${upSteps} + ${downSteps} kolen stran)`;
+    // Bolj oddaljeno/nesimetrično sorodstvo - opišemo preprosto, brez formalnih izrazov "koleno/odstavljen"
+    const ancestorName = `${personById(bestCommon)?.first_name || ""} ${personById(bestCommon)?.last_name || personById(bestCommon)?.maiden_name || ""}`.trim();
+    return `${name} in ti imata skupnega prednika (<strong>${ancestorName}</strong>): ti si od njega/nje oddaljen/-a ${upSteps} generacije, ${name} pa ${downSteps} generacije. Sorodstvo je torej precej oddaljeno in nesimetrično — natančen potek si oglej v spodnji verigi.`;
   }
 
   return `${name} je tvoj/-a <strong>${relation}</strong>.`;
