@@ -165,7 +165,7 @@ function computeRelationLabel(personA, personB, parentsOf, childrenOf, spousesOf
     if (downSteps > upSteps) {
       relation = `otrok tvojega bratranca oz. sestrične v ${degreeWord} kolenu (mlajša generacija bratranske veje)`;
     } else {
-      relation = `starš, ki je tvoj bratranec oz. sestrična v ${degreeWord} kolenu (starejša generacija bratranske veje)`;
+      return `${name} je bratranec oz. sestrična <strong>enega od tvojih staršev</strong> (v ${degreeWord} kolenu) — torej starejša generacija bratranske veje.`;
     }
   } else {
     relation = `sorodnik/-ca (skupni prednik ${upSteps} + ${downSteps} kolen stran)`;
