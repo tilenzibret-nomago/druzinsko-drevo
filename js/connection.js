@@ -60,8 +60,16 @@ function findAndRenderConnection() {
     return;
   }
 
-  const parentsOf = {};
-  rawParentChildC.forEach(r => { (parentsOf[r.child_id] ??= []).push(r.parent_id); });
+  const parentsOf = {}, childrenOf = {};
+  rawParentChildC.forEach(r => {
+    (parentsOf[r.child_id] ??= []).push(r.parent_id);
+    (childrenOf[r.parent_id] ??= []).push(r.child_id);
+  });
+  const spousesOf = {};
+  rawPartnershipsC.forEach(r => {
+    (spousesOf[r.person1_id] ??= []).push(r.person2_id);
+    (spousesOf[r.person2_id] ??= []).push(r.person1_id);
+  });
 
   // BFS navzgor od A: zabeleži pot do vsakega prednika
   function ancestorPaths(startId) {
@@ -85,7 +93,6 @@ function findAndRenderConnection() {
   const pathsA = ancestorPaths(selectedA.id);
   const pathsB = ancestorPaths(selectedB.id);
 
-  // Poišči najbližjega skupnega prednika (najkrajša skupna pot)
   let bestCommon = null, bestLen = Infinity;
   for (const ancId in pathsA) {
     if (pathsB[ancId]) {
@@ -94,24 +101,71 @@ function findAndRenderConnection() {
     }
   }
 
+  const relationLabel = computeRelationLabel(selectedA, selectedB, parentsOf, childrenOf, spousesOf, pathsA, pathsB, bestCommon);
+
   if (!bestCommon) {
-    // Ni skupnega prednika po krvi - preveri, ali sta povezana prek partnerstva (npr. zakonca)
     const directPartner = rawPartnershipsC.find(pt =>
       (pt.person1_id === selectedA.id && pt.person2_id === selectedB.id) ||
       (pt.person2_id === selectedA.id && pt.person1_id === selectedB.id)
     );
     if (directPartner) {
-      renderChain([selectedA.id, selectedB.id], "partner");
+      renderChain([selectedA.id, selectedB.id], "partner", relationLabel);
     } else {
       resultEl.innerHTML = "<p class='hint'>Ni najdene skupne krvne povezave med tema dvema osebama v trenutnih podatkih.</p>";
     }
     return;
   }
 
-  const upPath = pathsA[bestCommon];        // A -> ... -> skupni prednik
-  const downPath = [...pathsB[bestCommon]].reverse(); // skupni prednik -> ... -> B
+  const upPath = pathsA[bestCommon];
+  const downPath = [...pathsB[bestCommon]].reverse();
   const fullChain = [...upPath, ...downPath.slice(1)];
-  renderChain(fullChain, "blood");
+  renderChain(fullChain, "blood", relationLabel);
+}
+
+// Izračuna berljiv naziv sorodstva osebe B glede na osebo A
+function computeRelationLabel(personA, personB, parentsOf, childrenOf, spousesOf, pathsA, pathsB, bestCommon) {
+  const label = (id, male, female, neutral) => {
+    return personB.gender === "M" ? male : personB.gender === "F" ? female : (neutral || male);
+  };
+  const name = `${personB.first_name} ${personB.last_name || personB.maiden_name || ""}`.trim();
+
+  if (!bestCommon) return `${name} ni krvni sorodnik.`;
+
+  const upSteps = pathsA[bestCommon].length - 1; // koliko generacij gor od A do skupnega prednika
+  const downSteps = pathsB[bestCommon].length - 1; // koliko generacij dol od skupnega prednika do B
+
+  let relation;
+  if (bestCommon === personB.id) {
+    // B je neposredni prednik A
+    if (upSteps === 1) relation = label(personB.id, "oče", "mati");
+    else if (upSteps === 2) relation = label(personB.id, "dedek", "babica");
+    else if (upSteps === 3) relation = label(personB.id, "pradedek", "prababica");
+    else relation = `prednik (${upSteps}. koleno)`;
+  } else if (bestCommon === personA.id) {
+    // B je neposredni potomec A
+    if (downSteps === 1) relation = label(personB.id, "sin", "hči");
+    else if (downSteps === 2) relation = label(personB.id, "vnuk", "vnukinja");
+    else if (downSteps === 3) relation = label(personB.id, "pravnuk", "pravnukinja");
+    else relation = `potomec (${downSteps}. koleno)`;
+  } else if (upSteps === 1 && downSteps === 1) {
+    relation = label(personB.id, "brat", "sestra");
+  } else if (upSteps === 2 && downSteps === 1) {
+    relation = label(personB.id, "stric", "teta");
+  } else if (upSteps === 1 && downSteps === 2) {
+    relation = label(personB.id, "nečak", "nečakinja");
+  } else if (upSteps === 2 && downSteps === 2) {
+    relation = label(personB.id, "bratranec", "sestrična") + " (v prvem kolenu)";
+  } else if (upSteps === 3 && downSteps === 3) {
+    relation = label(personB.id, "bratranec", "sestrična") + " (v drugem kolenu)";
+  } else if (upSteps === 3 && downSteps === 1) {
+    relation = label(personB.id, "stric", "teta") + " (starš staršev generacija)";
+  } else if (Math.abs(upSteps - downSteps) === 1 && Math.min(upSteps, downSteps) >= 2) {
+    relation = label(personB.id, "bratranec", "sestrična") + " (v kolenu, odstavljen/-a)";
+  } else {
+    relation = `sorodnik/-ca (skupni prednik ${upSteps} + ${downSteps} kolen stran)`;
+  }
+
+  return `${name} je tvoj/-a <strong>${relation}</strong>.`;
 }
 
 function personById(id) {
@@ -124,11 +178,13 @@ function isoToEuC(iso) {
   return `${d}.${m}.${y}`;
 }
 
-function renderChain(chain, type) {
+function renderChain(chain, type, relationLabel) {
   const resultEl = document.getElementById("connection-result");
+  const labelHtml = relationLabel ? `<p class="relation-label">${relationLabel}</p>` : "";
 
   if (type === "partner") {
     resultEl.innerHTML = `
+      ${labelHtml}
       <div class="chain-wrap">
         <div class="chain-row">
           ${personCardHtml(chain[0])}
@@ -145,6 +201,7 @@ function renderChain(chain, type) {
   }).join("");
 
   resultEl.innerHTML = `
+    ${labelHtml}
     <div class="chain-wrap">
       <p class="chain-summary">Pot: ${chain.length} oseb, ${chain.length - 1} korakov</p>
       <div class="chain-column">${cards}</div>

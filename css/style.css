@@ -438,6 +438,20 @@ body.embedded .person-name-header {
   margin-bottom: 1rem;
 }
 
+.relation-label {
+  font-size: 1.15rem;
+  color: #3d3229;
+  text-align: center;
+  background: #f0ebe3;
+  padding: 0.8rem 1.2rem;
+  border-radius: 10px;
+  margin-bottom: 1.2rem;
+}
+
+.relation-label strong {
+  color: #8a6d4f;
+}
+
 .chain-column {
   display: flex;
   flex-direction: column;
